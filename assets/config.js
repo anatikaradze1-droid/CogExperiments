@@ -2,5 +2,5 @@ window.COG_CONFIG = {
   SUPABASE_URL: "",
   SUPABASE_PUBLISHABLE_KEY: "",
   DEMO_MODE: true,
-  BUILD: "4.0.0-final-clean"
+  BUILD: "5.0.0-builder-instructions-fixed-set"
 };

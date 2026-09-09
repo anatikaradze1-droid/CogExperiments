@@ -1,4 +1,4 @@
--- CogExperiments FINAL CLEAN v4
+-- CogExperiments BUILDER + FIXED SET v5
 create extension if not exists pgcrypto;
 
 create table public.admin_users (
@@ -47,6 +47,7 @@ create table public.trials (
   response_label text,
   rt_ms numeric,
   missing boolean not null default false,
+  metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 

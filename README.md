@@ -1,46 +1,34 @@
-# CogExperiments — FINAL CLEAN v4
+# CogExperiments — BUILDER + FIXED SET v5
 
-Fresh rebuild for a new site.
+This build adds a free-form experiment timeline and the first scientific preset: **Uznadze Fixed Set**.
 
-## Architecture
-Participant side:
-- Open a specific experiment link
-- Enter participant code
-- Read instructions
-- Complete experiment
-- Responses are saved centrally when Supabase is connected
+## New in v5
+- Independent **Instruction Screen** elements can be inserted anywhere in the timeline.
+- Optional block-specific instructions.
+- Independent timed **Break** elements with custom messages.
+- Editable completion message.
+- Create menu: **Blank experiment** or **Uznadze Fixed Set** preset.
+- Uznadze preset includes:
+  - physical screen calibration using an 85.60 mm bank/ID card;
+  - Practice (equal figures, max/default 3, excluded from analysis);
+  - Control (default 15 equal-pair trials);
+  - 5-minute Control→Set break;
+  - Set / Induction (default 15 trials, 80:40 mm);
+  - natural-asymmetry calculation and set-side selection;
+  - Critical (60:60 mm, max 40, stop after 10 consecutive `2` responses);
+  - 1000 ms exposure and 1500 ms ISI defaults;
+  - calibrated black circles and central red fixation point.
+- Generic Builder still supports arbitrary image/audio/video uploads, timings, response mappings, stopping rules, and free block names.
+- Research-friendly Excel export remains available.
 
-Admin side:
-- Login only
-- No public registration
-- Admin accounts are created manually in Supabase and explicitly added to `admin_users`
-- Create/edit/publish experiments
-- View results
-- Export Excel
-
-## Universal Experiment Builder
-There is no hardcoded Circles / Vertical Lines / Auditory selector.
-Admins can freely define:
-- blocks
-- block names
-- trial counts
-- exposure duration
-- ISI
-- breaks
-- response keys
-- stopping rules
-- uploaded image/audio/video stimuli
-
-## Excel
-- Participants: one row per participant, per-block 1/2/3 counts, percentages, sequence, missing
-- Trial_Data: one trial per row
-- Experiment_Settings: readable experiment settings
+## Important
+`DEMO_MODE` is still `true` until Supabase is connected. Demo data are stored only in this browser's localStorage.
 
 ## Production setup
-1. Create a new Supabase project.
+1. Create a fresh Supabase project.
 2. Run `supabase/schema.sql`.
 3. Create admin users manually in Supabase Authentication.
-4. Add their UUIDs to `public.admin_users`.
-5. Put Supabase Project URL + publishable key in `assets/config.js`.
+4. Add each admin UUID to `public.admin_users`.
+5. Put the Supabase Project URL + publishable key in `assets/config.js`.
 6. Set `DEMO_MODE: false`.
-7. Deploy the folder contents to a new GitHub repository / GitHub Pages site.
+7. Commit the files to the `CogExperiments` GitHub repository.
