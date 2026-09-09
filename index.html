@@ -4,18 +4,156 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CogExperiments</title>
-  <link rel="stylesheet" href="assets/app.css?v=7.0.0">
+  <link rel="stylesheet" href="assets/app.css?v=7.2.0">
 </head>
+
 <body>
-  <main class="landing">
-    <section class="hero card">
-      <div class="eyebrow">CogExperiments</div>
-      <h1>Experimental Platform</h1>
-      <p>უნივერსალური პლატფორმა ფსიქოლოგიური და კოგნიტური ექსპერიმენტებისთვის.</p>
-      <div class="actions">
-        <a class="btn primary" href="admin.html">Admin Login</a>
-      </div>
-    </section>
-  </main>
+
+<header class="topbar public-topbar">
+  <div>
+    <b>CogExperiments</b>
+    <span class="version">v7.2</span>
+  </div>
+
+  <div class="top-actions">
+    <span id="userBadge" class="badge hidden"></span>
+
+    <button id="loginOpen" class="btn small">
+      შესვლა
+    </button>
+
+    <button id="registerOpen" class="btn small primary">
+      რეგისტრაცია
+    </button>
+
+    <a class="btn small" href="admin.html">
+      Admin Login
+    </a>
+
+    <button id="logoutBtn" class="btn small hidden">
+      გასვლა
+    </button>
+  </div>
+</header>
+
+<main class="public-page">
+
+  <section class="public-hero">
+    <div class="eyebrow">CogExperiments</div>
+
+    <h1>Experimental Platform</h1>
+
+    <p>
+      ფსიქოლოგიური და კოგნიტური ექსპერიმენტების პლატფორმა.
+    </p>
+  </section>
+
+  <section class="section-head public-section-head">
+    <div>
+      <h2>გამოქვეყნებული ექსპერიმენტები</h2>
+
+      <p class="muted">
+        აირჩიეთ ექსპერიმენტი მონაწილეობის დასაწყებად.
+      </p>
+    </div>
+  </section>
+
+  <div id="experimentList" class="experiment-public-grid">
+    <div class="card muted">იტვირთება...</div>
+  </div>
+
+</main>
+
+
+<div
+  id="authModal"
+  class="modal-backdrop hidden"
+  role="dialog"
+  aria-modal="true"
+>
+
+  <section class="card auth-modal">
+
+    <div class="section-head">
+      <h2 id="authTitle">შესვლა</h2>
+
+      <button
+        id="authClose"
+        class="btn small"
+        aria-label="დახურვა"
+      >
+        ✕
+      </button>
+    </div>
+
+
+    <div class="auth-tabs">
+
+      <button
+        id="loginTab"
+        class="btn small primary"
+      >
+        შესვლა
+      </button>
+
+      <button
+        id="registerTab"
+        class="btn small"
+      >
+        რეგისტრაცია
+      </button>
+
+    </div>
+
+
+    <div class="field">
+      <label>Email</label>
+      <input
+        id="authEmail"
+        type="email"
+        autocomplete="email"
+      >
+    </div>
+
+
+    <div class="field">
+      <label>პაროლი</label>
+      <input
+        id="authPassword"
+        type="password"
+        autocomplete="current-password"
+      >
+    </div>
+
+
+    <div
+      id="authMessage"
+      class="alert hidden"
+    ></div>
+
+
+    <button
+      id="authSubmit"
+      class="btn primary"
+    >
+      შესვლა
+    </button>
+
+
+    <p id="authNote" class="muted">
+      რეგისტრირებული ანგარიში ავტომატურად არ იღებს
+      ადმინისტრატორის უფლებებს.
+    </p>
+
+  </section>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="assets/config.js?v=7.2.0"></script>
+<script src="assets/db.js?v=7.2.0"></script>
+<script src="assets/landing.js?v=7.2.0"></script>
+
 </body>
 </html>
