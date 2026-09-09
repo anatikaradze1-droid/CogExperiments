@@ -10,11 +10,17 @@
       "'": '&#39;'
     }[c]));
 
-  const fmt = t => esc(t).replace(/\n/g, '<br>');
+  const fmt = t =>
+    esc(t).replace(/\n/g, '<br>');
 
   const show = h => {
-    app.innerHTML =
-      `<div class="runner-shell"><section class="runner-card">${h}</section></div>`;
+    app.innerHTML = `
+      <div class="runner-shell">
+        <section class="runner-card">
+          ${h}
+        </section>
+      </div>
+    `;
   };
 
   const waitButton = (id = 'next') =>
@@ -22,14 +28,21 @@
       document.getElementById(id).onclick = resolve;
     });
 
-  let exp, cfg, session;
+  let exp;
+  let cfg;
+  let session;
+
   let pxPerMm = null;
   let globalTrial = 0;
+
   let trialRows = [];
   let controlResponses = [];
+
   let setSide = '';
   let criticalEndedByStreak = false;
+
   let completedFixedStages = new Set();
+
   let calibrationViewport = null;
   let resizeBound = false;
 
@@ -41,18 +54,28 @@
     setVariant: null
   };
 
+
   async function boot() {
     const slug =
-      new URLSearchParams(location.search).get('exp');
+      new URLSearchParams(
+        location.search
+      ).get('exp');
 
     if (!slug) {
-      return show('<h2>Experiment link incomplete</h2>');
+      return show(`
+        <h2>Experiment link incomplete</h2>
+      `);
     }
 
-    exp = await CogDB.experimentBySlug(slug);
+    exp =
+      await CogDB.experimentBySlug(
+        slug
+      );
 
     if (!exp) {
-      return show('<h2>Experiment unavailable</h2>');
+      return show(`
+        <h2>Experiment unavailable</h2>
+      `);
     }
 
     cfg = exp.config || {};
@@ -61,53 +84,103 @@
       <h2>${esc(exp.name)}</h2>
 
       <div class="field">
-        <label>Participant code</label>
-        <input id="pc" autocomplete="off">
+        <label>
+          Participant code
+        </label>
+
+        <input
+          id="pc"
+          autocomplete="off">
       </div>
 
-      <button id="start" class="btn primary">
+      <button
+        id="start"
+        class="btn primary">
         დაწყება
       </button>
     `);
 
-    const startBtn = document.getElementById('start');
-    const pcInput = document.getElementById('pc');
+    const startBtn =
+      document.getElementById(
+        'start'
+      );
 
-    startBtn.onclick = async () => {
-      if (!pcInput.value.trim()) return;
+    const pcInput =
+      document.getElementById(
+        'pc'
+      );
 
-      exp = await CogDB.experimentBySlug(slug);
-      cfg = exp.config || {};
+    startBtn.onclick =
+      async () => {
+        if (
+          !pcInput.value.trim()
+        ) {
+          return;
+        }
 
-      session = await CogDB.createSession({
-        experiment_id: exp.id,
-        experiment_version: exp.version,
-        participant_code: pcInput.value.trim(),
-        device_type:
-          /Mobi/i.test(navigator.userAgent)
-            ? 'mobile'
-            : 'desktop',
-        summary: {}
-      });
+        exp =
+          await CogDB.experimentBySlug(
+            slug
+          );
 
-      if (cfg.calibration?.enabled) {
-        await calibrate();
-      }
+        cfg =
+          exp.config || {};
 
-      await runTimeline();
-    };
+        session =
+          await CogDB.createSession({
+            experiment_id:
+              exp.id,
+
+            experiment_version:
+              exp.version,
+
+            participant_code:
+              pcInput.value.trim(),
+
+            device_type:
+              /Mobi/i.test(
+                navigator.userAgent
+              )
+                ? 'mobile'
+                : 'desktop',
+
+            viewport_width:
+              innerWidth,
+
+            viewport_height:
+              innerHeight,
+
+            user_agent:
+              navigator.userAgent,
+
+            summary: {}
+          });
+
+        if (
+          cfg.calibration?.enabled
+        ) {
+          await calibrate();
+        }
+
+        await runTimeline();
+      };
   }
+
 
   async function calibrate() {
     let width = 320;
 
     show(`
-      <h2>ეკრანის კალიბრაცია</h2>
+      <h2>
+        ეკრანის კალიბრაცია
+      </h2>
 
       <p>
-        მოათავსეთ სტანდარტული საბანკო/ID ბარათი ეკრანთან
-        და შეცვალეთ მართკუთხედის სიგანე, სანამ ზუსტად
-        დაემთხვევა ბარათის <b>85.60 mm</b> სიგანეს.
+        მოათავსეთ სტანდარტული საბანკო/ID
+        ბარათი ეკრანთან და შეცვალეთ
+        მართკუთხედის სიგანე, სანამ ზუსტად
+        დაემთხვევა ბარათის
+        <b>85.60 mm</b> სიგანეს.
       </p>
 
       <div class="calibration-wrap">
@@ -118,8 +191,14 @@
         </div>
       </div>
 
-      <div class="row calibration-controls">
-        <button id="minus" class="btn">−</button>
+      <div
+        class="row calibration-controls">
+
+        <button
+          id="minus"
+          class="btn">
+          −
+        </button>
 
         <input
           id="range"
@@ -128,48 +207,100 @@
           max="700"
           value="${width}">
 
-        <button id="plus" class="btn">+</button>
+        <button
+          id="plus"
+          class="btn">
+          +
+        </button>
+
       </div>
 
       <p>
-        <span id="pxv">${width}</span> px
+        <span id="pxv">
+          ${width}
+        </span>
+        px
       </p>
 
-      <button id="calok" class="btn primary">
+      <button
+        id="calok"
+        class="btn primary">
         დამთხვევა ზუსტია — გაგრძელება
       </button>
     `);
 
-    const ref = document.getElementById('cardRef');
-    const range = document.getElementById('range');
-    const pxv = document.getElementById('pxv');
-    const minus = document.getElementById('minus');
-    const plus = document.getElementById('plus');
-
-    const set = v => {
-      width = Math.max(
-        160,
-        Math.min(700, Number(v))
+    const ref =
+      document.getElementById(
+        'cardRef'
       );
 
+    const range =
+      document.getElementById(
+        'range'
+      );
+
+    const pxv =
+      document.getElementById(
+        'pxv'
+      );
+
+    const minus =
+      document.getElementById(
+        'minus'
+      );
+
+    const plus =
+      document.getElementById(
+        'plus'
+      );
+
+    const set = v => {
+      width =
+        Math.max(
+          160,
+          Math.min(
+            700,
+            Number(v)
+          )
+        );
+
       range.value = width;
-      ref.style.width = width + 'px';
-      pxv.textContent = width;
+
+      ref.style.width =
+        width + 'px';
+
+      pxv.textContent =
+        width;
     };
 
-    range.oninput = () => set(range.value);
-    minus.onclick = () => set(width - 2);
-    plus.onclick = () => set(width + 2);
+    range.oninput =
+      () => set(
+        range.value
+      );
 
-    await waitButton('calok');
+    minus.onclick =
+      () => set(
+        width - 2
+      );
 
-    pxPerMm = width / 85.60;
+    plus.onclick =
+      () => set(
+        width + 2
+      );
+
+    await waitButton(
+      'calok'
+    );
+
+    pxPerMm =
+      width / 85.60;
 
     calibrationViewport = {
       w: innerWidth,
       h: innerHeight,
       orientation:
-        screen.orientation?.type || ''
+        screen.orientation?.type ||
+        ''
     };
 
     if (!resizeBound) {
@@ -178,7 +309,11 @@
       addEventListener(
         'resize',
         () => {
-          if (!calibrationViewport) return;
+          if (
+            !calibrationViewport
+          ) {
+            return;
+          }
 
           const changed =
             Math.abs(
@@ -191,13 +326,17 @@
             ) > 30;
 
           if (changed) {
-            calibrationViewport = null;
+            calibrationViewport =
+              null;
           }
         },
-        { passive: true }
+        {
+          passive: true
+        }
       );
     }
   }
+
 
   async function ensureCalibration() {
     if (
@@ -208,28 +347,38 @@
     }
   }
 
+
   async function runTimeline() {
     const timeline =
-      structuredClone(cfg.elements || []);
+      structuredClone(
+        cfg.elements || []
+      );
 
-    if (cfg.template === 'uznadze_fixed_set') {
+    if (
+      cfg.template ===
+      'uznadze_fixed_set'
+    ) {
       const setIndex =
         timeline.findIndex(
           e =>
-            e.type === 'fixedset_stage' &&
+            e.type ===
+              'fixedset_stage' &&
             e.stage === 'set'
         );
 
       const criticalIndex =
         timeline.findIndex(
           e =>
-            e.type === 'fixedset_stage' &&
-            e.stage === 'critical'
+            e.type ===
+              'fixedset_stage' &&
+            e.stage ===
+              'critical'
         );
 
       if (
         setIndex < 0 ||
-        criticalIndex !== setIndex + 1
+        criticalIndex !==
+          setIndex + 1
       ) {
         throw Error(
           'Fixed Set requires immediate Set → Critical.'
@@ -237,35 +386,50 @@
       }
     }
 
-    for (const el of timeline) {
+    for (
+      const el of timeline
+    ) {
       await ensureCalibration();
 
-      if (el.type === 'instruction') {
+      if (
+        el.type ===
+        'instruction'
+      ) {
         await instruction(el);
       }
 
-      else if (el.type === 'break') {
+      else if (
+        el.type === 'break'
+      ) {
         await pause(el);
       }
 
-      else if (el.type === 'fixedset_stage') {
+      else if (
+        el.type ===
+        'fixedset_stage'
+      ) {
         if (
-          !completedFixedStages.has(el.stage)
+          !completedFixedStages
+            .has(el.stage)
         ) {
-          await fixedStage(el.stage);
-
-          completedFixedStages.add(
+          await fixedStage(
             el.stage
           );
+
+          completedFixedStages
+            .add(el.stage);
         }
       }
 
-      else if (el.type === 'block') {
+      else if (
+        el.type === 'block'
+      ) {
         await genericBlock(el);
       }
     }
 
-    const summary = buildSummary();
+    const summary =
+      buildSummary();
 
     await CogDB.finishSession(
       session.id,
@@ -273,7 +437,10 @@
     );
 
     show(`
-      <h2>ექსპერიმენტი დასრულდა</h2>
+      <h2>
+        ექსპერიმენტი დასრულდა
+      </h2>
+
       <p>
         ${esc(
           cfg.completion_message ||
@@ -283,15 +450,23 @@
     `);
   }
 
+
   async function instruction(el) {
     show(`
-      <h2>${esc(el.title || 'ინსტრუქცია')}</h2>
+      <h2>
+        ${esc(
+          el.title ||
+          'ინსტრუქცია'
+        )}
+      </h2>
 
       <div class="instruction-text">
         ${fmt(el.text || '')}
       </div>
 
-      <button id="next" class="btn primary">
+      <button
+        id="next"
+        class="btn primary">
         ${esc(
           el.button_text ||
           'გაგრძელება'
@@ -302,18 +477,26 @@
     await waitButton();
   }
 
+
   async function pause(el) {
     const ms =
       Math.max(
         0,
-        Number(el.duration_ms) || 0
+        Number(
+          el.duration_ms
+        ) || 0
       );
 
     const end =
       Date.now() + ms;
 
     show(`
-      <h2>${esc(el.title || 'შუალედი')}</h2>
+      <h2>
+        ${esc(
+          el.title ||
+          'შუალედი'
+        )}
+      </h2>
 
       <div class="instruction-text">
         ${fmt(el.text || '')}
@@ -321,7 +504,12 @@
 
       ${
         ms
-          ? '<div id="clock" class="countdown"></div>'
+          ? `
+            <div
+              id="clock"
+              class="countdown">
+            </div>
+          `
           : ''
       }
 
@@ -337,52 +525,79 @@
     `);
 
     const resume =
-      document.getElementById('resume');
+      document.getElementById(
+        'resume'
+      );
 
     if (ms) {
-      await new Promise(resolve => {
-        const tick = () => {
-          const s =
-            Math.ceil(
-              Math.max(
-                0,
-                end - Date.now()
-              ) / 1000
+      await new Promise(
+        resolve => {
+          const tick = () => {
+            const s =
+              Math.ceil(
+                Math.max(
+                  0,
+                  end -
+                  Date.now()
+                ) / 1000
+              );
+
+            const clock =
+              document.getElementById(
+                'clock'
+              );
+
+            if (clock) {
+              clock.textContent =
+                `${String(
+                  Math.floor(
+                    s / 60
+                  )
+                ).padStart(
+                  2,
+                  '0'
+                )}:` +
+                `${String(
+                  s % 60
+                ).padStart(
+                  2,
+                  '0'
+                )}`;
+            }
+
+            if (s <= 0) {
+              resume.disabled =
+                false;
+
+              return resolve();
+            }
+
+            setTimeout(
+              tick,
+              250
             );
+          };
 
-          const clock =
-            document.getElementById('clock');
-
-          if (clock) {
-            clock.textContent =
-              `${String(
-                Math.floor(s / 60)
-              ).padStart(2, '0')}:` +
-              `${String(
-                s % 60
-              ).padStart(2, '0')}`;
-          }
-
-          if (s <= 0) {
-            resume.disabled = false;
-            return resolve();
-          }
-
-          setTimeout(tick, 250);
-        };
-
-        tick();
-      });
+          tick();
+        }
+      );
     }
 
-    await waitButton('resume');
+    await waitButton(
+      'resume'
+    );
   }
 
-  function seedFrom(text) {
-    let h = 2166136261 >>> 0;
 
-    for (const ch of String(text)) {
-      h ^= ch.charCodeAt(0);
+  function seedFrom(text) {
+    let h =
+      2166136261 >>> 0;
+
+    for (
+      const ch of String(text)
+    ) {
+      h ^=
+        ch.charCodeAt(0);
 
       h =
         Math.imul(
@@ -394,10 +609,12 @@
     return h >>> 0;
   }
 
+
   function mulberry32(seed) {
     return () => {
       let t =
-        seed += 0x6D2B79F5;
+        seed +=
+          0x6D2B79F5;
 
       t =
         Math.imul(
@@ -413,30 +630,45 @@
         );
 
       return (
-        (t ^ t >>> 14) >>> 0
+        (
+          t ^
+          t >>> 14
+        ) >>> 0
       ) / 4294967296;
     };
   }
 
-  function shuffle(a, rnd = Math.random) {
+
+  function shuffle(
+    a,
+    rnd = Math.random
+  ) {
     a = a.slice();
 
     for (
-      let i = a.length - 1;
+      let i =
+        a.length - 1;
       i > 0;
       i--
     ) {
       const j =
         Math.floor(
-          rnd() * (i + 1)
+          rnd() *
+          (i + 1)
         );
 
-      [a[i], a[j]] =
-        [a[j], a[i]];
+      [
+        a[i],
+        a[j]
+      ] = [
+        a[j],
+        a[i]
+      ];
     }
 
     return a;
   }
+
 
   function balancedPseudoIndices(
     nStim,
@@ -444,7 +676,9 @@
     seed
   ) {
     if (nStim <= 1) {
-      return Array(nSlots).fill(0);
+      return Array(
+        nSlots
+      ).fill(0);
     }
 
     const rnd =
@@ -459,7 +693,8 @@
 
     for (
       let i = 0;
-      i < nSlots % nStim;
+      i <
+        nSlots % nStim;
       i++
     ) {
       counts[i]++;
@@ -485,7 +720,10 @@
       attempt++
     ) {
       const x =
-        shuffle(base, rnd);
+        shuffle(
+          base,
+          rnd
+        );
 
       let ok = true;
 
@@ -503,13 +741,21 @@
         }
       }
 
-      if (ok) return x;
+      if (ok) {
+        return x;
+      }
     }
 
-    return shuffle(base, rnd);
+    return shuffle(
+      base,
+      rnd
+    );
   }
 
-  function adaptiveDirectionKeys(b) {
+
+  function adaptiveDirectionKeys(
+    b
+  ) {
     const r =
       cfg.responses || [];
 
@@ -531,25 +777,34 @@
     };
   }
 
-  function determineGenericSetVariant(b) {
+
+  function determineGenericSetVariant(
+    b
+  ) {
     const keys =
-      adaptiveDirectionKeys(b);
+      adaptiveDirectionKeys(
+        b
+      );
 
     const bad =
-      adaptiveState.controlResponses.filter(
-        k =>
-          k === keys.a ||
-          k === keys.b
-      );
+      adaptiveState
+        .controlResponses
+        .filter(
+          k =>
+            k === keys.a ||
+            k === keys.b
+        );
 
     const a =
       bad.filter(
-        k => k === keys.a
+        k =>
+          k === keys.a
       ).length;
 
     const bb =
       bad.filter(
-        k => k === keys.b
+        k =>
+          k === keys.b
       ).length;
 
     const threshold =
@@ -559,17 +814,23 @@
 
     if (
       bad.length &&
-      a / bad.length > threshold
+      a / bad.length >
+        threshold
     ) {
-      adaptiveState.asymmetry = 'A';
+      adaptiveState.asymmetry =
+        'A';
+
       return 0;
     }
 
     if (
       bad.length &&
-      bb / bad.length > threshold
+      bb / bad.length >
+        threshold
     ) {
-      adaptiveState.asymmetry = 'B';
+      adaptiveState.asymmetry =
+        'B';
+
       return 1;
     }
 
@@ -607,27 +868,75 @@
         determineGenericSetVariant(b);
     }
 
+    const trials =
+      Math.max(
+        1,
+        Number(b.trials) || 1
+      );
+
+    let plan = null;
+
+    if (
+      Array.isArray(b.stimuli) &&
+      b.stimuli.length > 1 &&
+      (
+        b.stimulus_order ===
+          'pseudorandom' ||
+        b.stimulus_order ===
+          'balanced_pseudorandom'
+      )
+    ) {
+      const planKey =
+        `${b.name}|${trials}`;
+
+      if (
+        !blockPlans.has(
+          planKey
+        )
+      ) {
+        blockPlans.set(
+          planKey,
+          balancedPseudoIndices(
+            b.stimuli.length,
+            trials,
+            seedFrom(
+              `${session.participant_code}|${exp.id}|${b.name}`
+            )
+          )
+        );
+      }
+
+      plan =
+        blockPlans.get(
+          planKey
+        );
+    }
+
     let streak = 0;
 
     for (
       let i = 1;
-      i <= Math.max(
-        1,
-        Number(b.trials) || 1
-      );
+      i <= trials;
       i++
     ) {
       await ensureCalibration();
 
       const r =
-        await genericTrial(b, i);
+        await genericTrial(
+          b,
+          i,
+          plan
+        );
 
       if (
-        b.adaptive_role === 'control'
+        b.adaptive_role ===
+        'control'
       ) {
-        adaptiveState.controlResponses.push(
-          r.response_key
-        );
+        adaptiveState
+          .controlResponses
+          .push(
+            r.response_key
+          );
       }
 
       if (
@@ -636,13 +945,17 @@
       ) {
         streak =
           r.response_key ===
-          b.stop_rule.key
+          String(
+            b.stop_rule.key
+          )
             ? streak + 1
             : 0;
 
         if (
           streak >=
-          Number(b.stop_rule.count)
+          Number(
+            b.stop_rule.count
+          )
         ) {
           break;
         }
@@ -650,11 +963,56 @@
     }
   }
 
+
   function fixationHTML(b) {
     if (
-      b.fixation?.mode === 'none'
+      b.fixation?.mode ===
+      'none'
     ) {
       return '';
+    }
+
+    if (
+      b.fixation?.mode ===
+        'image' &&
+      b.fixation?.url
+    ) {
+      const p =
+        pxPerMm ||
+        96 / 25.4;
+
+      const width =
+        Math.max(
+          1,
+          (
+            Number(
+              b.fixation.width_mm
+            ) || 3
+          ) * p
+        );
+
+      const height =
+        Math.max(
+          1,
+          (
+            Number(
+              b.fixation.height_mm
+            ) || 3
+          ) * p
+        );
+
+      return `
+        <img
+          class="fixation-image"
+          src="${esc(
+            b.fixation.url
+          )}"
+          alt=""
+          style="
+            width:${width}px;
+            height:${height}px;
+          ">
+      `;
     }
 
     const p =
@@ -682,21 +1040,162 @@
     `;
   }
 
-  async function genericTrial(b, i) {
+
+  function stimulusMarkup(s) {
+    if (!s) {
+      return '';
+    }
+
+    const type =
+      String(
+        s.type || ''
+      ).toLowerCase();
+
+    const url =
+      s.url || '';
+
+    if (
+      type === 'audio' ||
+      /\.(wav|mp3|ogg|m4a)$/i
+        .test(url)
+    ) {
+      return `
+        <audio
+          data-media
+          src="${esc(url)}"
+          preload="auto">
+        </audio>
+      `;
+    }
+
+    if (
+      type === 'video' ||
+      /\.(mp4|webm|mov)$/i
+        .test(url)
+    ) {
+      return `
+        <video
+          data-media
+          src="${esc(url)}"
+          preload="auto"
+          playsinline>
+        </video>
+      `;
+    }
+
+    if (url) {
+      const p =
+        pxPerMm ||
+        96 / 25.4;
+
+      const widthMm =
+        Number(
+          s.width_mm
+        );
+
+      const heightMm =
+        Number(
+          s.height_mm
+        );
+
+      const style = [];
+
+      if (
+        Number.isFinite(
+          widthMm
+        ) &&
+        widthMm > 0
+      ) {
+        style.push(
+          `width:${widthMm * p}px`
+        );
+      }
+
+      if (
+        Number.isFinite(
+          heightMm
+        ) &&
+        heightMm > 0
+      ) {
+        style.push(
+          `height:${heightMm * p}px`
+        );
+      }
+
+      return `
+        <img
+          data-media
+          class="uploaded-stimulus"
+          src="${esc(url)}"
+          alt=""
+          style="${style.join(';')}">
+      `;
+    }
+
+    return `
+      <div class="generic-stimulus">
+        ${esc(
+          s.name || ''
+        )}
+      </div>
+    `;
+  }
+
+
+  async function genericTrial(
+    b,
+    i,
+    plan = null
+  ) {
     const stimuli =
-      b.stimuli || [];
+      Array.isArray(
+        b.stimuli
+      )
+        ? b.stimuli
+        : [];
 
     let selected = [];
 
     if (stimuli.length) {
       if (
-        b.adaptive_role === 'set' &&
-        adaptiveState.setVariant != null
+        b.adaptive_role ===
+          'set' &&
+        adaptiveState.setVariant !=
+          null
       ) {
         selected = [
           stimuli[
-            adaptiveState.setVariant %
+            adaptiveState
+              .setVariant %
             stimuli.length
+          ]
+        ];
+      }
+
+      else if (
+        plan &&
+        plan.length
+      ) {
+        selected = [
+          stimuli[
+            plan[
+              (i - 1) %
+              plan.length
+            ]
+          ]
+        ];
+      }
+
+      else if (
+        b.stimulus_order ===
+        'random'
+      ) {
+        selected = [
+          stimuli[
+            Math.floor(
+              Math.random() *
+              stimuli.length
+            )
           ]
         ];
       }
@@ -715,47 +1214,32 @@
       fixationHTML(b);
 
     const stimulusHTML =
-      selected.map(s => {
-        if (!s) return '';
+      selected
+        .map(
+          stimulusMarkup
+        )
+        .join('');
 
-        if (
-          s.type === 'audio' ||
-          s.url?.match(
-            /\.(wav|mp3|ogg)$/i
-          )
-        ) {
-          return `
-            <audio
-              data-media
-              src="${esc(s.url)}"
-              preload="auto">
-            </audio>
 
-            <div class="audio-stimulus">
-              ♪
-            </div>
-          `;
-        }
+    /*
+      IMPORTANT FIX
 
-        if (s.url) {
-          return `
-            <img
-              data-media
-              class="uploaded-stimulus"
-              src="${esc(s.url)}"
-              alt="">
-          `;
-        }
+      #stage remains a full-screen absolute
+      stimulus layer.
 
-        return `
-          <div class="generic-stimulus">
-            ${esc(s.name || '')}
-          </div>
-        `;
-      }).join('');
+      Fixation is NOT inside #stage.
+
+      It is a separate sibling overlay attached
+      directly to the experiment screen.
+
+      During exposure -> ISI we will clear ONLY
+      #stage. This exact fixation element remains
+      untouched.
+    */
 
     app.innerHTML = `
-      <section class="experiment-screen">
+      <section
+        class="experiment-screen">
 
         <div
           id="stage"
@@ -769,6 +1253,7 @@
           fixation
             ? `
               <div
+                id="trialFixation"
                 class="trial-fixation-overlay"
                 style="
                   position:fixed;
@@ -779,7 +1264,9 @@
                   z-index:1000;
                   pointer-events:none;
                 ">
+
                 ${fixation}
+
               </div>
             `
             : ''
@@ -790,7 +1277,9 @@
             .map(
               r => `
                 <button
-                  data-k="${esc(r.key)}">
+                  data-k="${esc(
+                    r.key
+                  )}">
                   ${esc(r.key)}
                   —
                   ${esc(r.label)}
@@ -804,20 +1293,25 @@
     `;
 
     return captureTrial({
-      block_name: b.name,
-      block_trial: i,
+      block_name:
+        b.name,
+
+      block_trial:
+        i,
 
       stimulus_name:
         selected
           .map(
-            s => s?.name || ''
+            s =>
+              s?.name || ''
           )
           .join(' | '),
 
       stimulus_type:
         selected
           .map(
-            s => s?.type || ''
+            s =>
+              s?.type || ''
           )
           .join(' | '),
 
@@ -860,10 +1354,12 @@
           'none',
 
         adaptive_asymmetry:
-          adaptiveState.asymmetry,
+          adaptiveState
+            .asymmetry,
 
         adaptive_set_variant:
-          adaptiveState.setVariant,
+          adaptiveState
+            .setVariant,
 
         px_per_mm:
           pxPerMm
@@ -871,11 +1367,15 @@
     });
   }
 
+
   const buttons = () =>
     (cfg.responses || [])
       .map(
         r => `
-          <button data-k="${esc(r.key)}">
+          <button
+            data-k="${esc(
+              r.key
+            )}">
             ${esc(r.key)}
             —
             ${esc(r.label)}
@@ -884,19 +1384,25 @@
       )
       .join('');
 
+
   async function fixedStage(stage) {
     const f =
       cfg.fixed_set || {};
 
-    if (stage === 'practice') {
-      for (
-        let i = 1;
-        i <= Math.min(
+    if (
+      stage === 'practice'
+    ) {
+      const n =
+        Math.min(
           3,
           Number(
             f.practice_trials
           ) || 3
         );
+
+      for (
+        let i = 1;
+        i <= n;
         i++
       ) {
         await circleTrial(
@@ -905,19 +1411,30 @@
           f.equal_mm,
           f.equal_mm,
           false,
-          { stage }
+          {
+            stage
+          }
         );
       }
     }
 
-    if (stage === 'control') {
+
+    if (
+      stage === 'control'
+    ) {
       controlResponses = [];
+
+      const n =
+        Math.max(
+          15,
+          Number(
+            f.control_trials
+          ) || 15
+        );
 
       for (
         let i = 1;
-        i <= Number(
-          f.control_trials
-        );
+        i <= n;
         i++
       ) {
         const r =
@@ -927,7 +1444,9 @@
             f.equal_mm,
             f.equal_mm,
             true,
-            { stage }
+            {
+              stage
+            }
           );
 
         controlResponses.push(
@@ -936,15 +1455,21 @@
       }
     }
 
-    if (stage === 'set') {
+
+    if (
+      stage === 'set'
+    ) {
       setSide =
         determineSetSide();
 
+      const n =
+        Number(
+          f.set_trials
+        ) || 15;
+
       for (
         let i = 1;
-        i <= Number(
-          f.set_trials
-        );
+        i <= n;
         i++
       ) {
         await circleTrial(
@@ -963,23 +1488,41 @@
 
           {
             stage,
-            set_side: setSide
+            set_side:
+              setSide
           }
         );
       }
     }
 
-    if (stage === 'critical') {
+
+    if (
+      stage === 'critical'
+    ) {
       let streak = 0;
 
       criticalEndedByStreak =
         false;
 
+      const maxTrials =
+        Number(
+          f.critical_max_trials
+        ) || 40;
+
+      const stopCount =
+        Number(
+          f.critical_stop_count
+        ) || 10;
+
+      const stopKey =
+        String(
+          f.critical_stop_key ||
+          '2'
+        );
+
       for (
         let i = 1;
-        i <= Number(
-          f.critical_max_trials
-        );
+        i <= maxTrials;
         i++
       ) {
         const r =
@@ -991,21 +1534,20 @@
             true,
             {
               stage,
-              set_side: setSide
+              set_side:
+                setSide
             }
           );
 
         streak =
           r.response_key ===
-          f.critical_stop_key
+          stopKey
             ? streak + 1
             : 0;
 
         if (
           streak >=
-          Number(
-            f.critical_stop_count
-          )
+          stopCount
         ) {
           criticalEndedByStreak =
             true;
@@ -1016,16 +1558,18 @@
     }
   }
 
+
   function determineSetSide() {
     const f =
       cfg.fixed_set || {};
 
     const bad =
-      controlResponses.filter(
-        k =>
-          k === '1' ||
-          k === '3'
-      );
+      controlResponses
+        .filter(
+          k =>
+            k === '1' ||
+            k === '3'
+        );
 
     const left =
       bad.filter(
@@ -1037,10 +1581,15 @@
         k => k === '3'
       ).length;
 
+    const threshold =
+      Number(
+        f.natural_asymmetry_threshold
+      ) || 0.70;
+
     if (
       bad.length &&
       left / bad.length >
-      f.natural_asymmetry_threshold
+        threshold
     ) {
       return 'left';
     }
@@ -1048,7 +1597,7 @@
     if (
       bad.length &&
       right / bad.length >
-      f.natural_asymmetry_threshold
+        threshold
     ) {
       return 'right';
     }
@@ -1061,6 +1610,7 @@
       ? 'right'
       : 'left';
   }
+
 
   async function circleTrial(
     name,
@@ -1103,6 +1653,18 @@
       </div>
     `;
 
+
+    /*
+      Circles have their own presentation layer.
+
+      The circles are positioned symmetrically
+      around the viewport center.
+
+      Fixation is again a separate viewport
+      overlay and therefore remains stationary
+      when the circles disappear.
+    */
+
     app.innerHTML = `
       <section
         class="experiment-screen fixedset-screen">
@@ -1113,7 +1675,9 @@
 
           <div
             class="uploaded-pair"
-            style="gap:${gap}px">
+            style="
+              gap:${gap}px;
+            ">
 
             <div
               class="circle-stim"
@@ -1123,8 +1687,13 @@
               ">
             </div>
 
-            <div>
-              ${fixHtml}
+            <div
+              style="
+                width:${fix}px;
+                height:${fix}px;
+                visibility:hidden;
+                flex:none;
+              ">
             </div>
 
             <div
@@ -1136,6 +1705,24 @@
             </div>
 
           </div>
+
+        </div>
+
+        <div
+          id="trialFixation"
+          class="trial-fixation-overlay"
+          style="
+            position:fixed;
+            left:50vw;
+            top:50vh;
+            width:0;
+            height:0;
+            z-index:1000;
+            pointer-events:none;
+          ">
+
+          ${fixHtml}
+
         </div>
 
         <div class="response-bar">
@@ -1146,8 +1733,11 @@
     `;
 
     return captureTrial({
-      block_name: name,
-      block_trial: i,
+      block_name:
+        name,
+
+      block_trial:
+        i,
 
       stimulus_name:
         `circle_pair_${lmm}mm_${rmm}mm`,
@@ -1157,13 +1747,15 @@
 
       exposure_ms:
         Number(
-          cfg.fixed_set.exposure_ms
-        ),
+          cfg.fixed_set
+            .exposure_ms
+        ) || 1000,
 
       isi_ms:
         Number(
-          cfg.fixed_set.isi_ms
-        ),
+          cfg.fixed_set
+            .isi_ms
+        ) || 1500,
 
       response_window:
         'until_next_stimulus',
@@ -1175,13 +1767,19 @@
 
       metadata: {
         ...metadata,
-        left_mm: lmm,
-        right_mm: rmm,
+
+        left_mm:
+          lmm,
+
+        right_mm:
+          rmm,
+
         px_per_mm:
           pxPerMm
       }
     });
   }
+
 
   async function prepareMedia(
     configuredExposure
@@ -1205,39 +1803,57 @@
     await Promise.all(
       media.map(
         m =>
-          new Promise(resolve => {
-            if (
-              m.readyState >= 1
-            ) {
-              return resolve();
+          new Promise(
+            resolve => {
+              if (
+                m.readyState >= 1
+              ) {
+                return resolve();
+              }
+
+              let doneCalled =
+                false;
+
+              const done = () => {
+                if (
+                  doneCalled
+                ) {
+                  return;
+                }
+
+                doneCalled =
+                  true;
+
+                resolve();
+              };
+
+              m.addEventListener(
+                'loadedmetadata',
+                done,
+                {
+                  once: true
+                }
+              );
+
+              m.addEventListener(
+                'error',
+                done,
+                {
+                  once: true
+                }
+              );
+
+              setTimeout(
+                done,
+                2500
+              );
+
+              try {
+                m.load?.();
+              }
+              catch {}
             }
-
-            const done = () => {
-              resolve();
-            };
-
-            m.addEventListener(
-              'loadedmetadata',
-              done,
-              { once: true }
-            );
-
-            m.addEventListener(
-              'error',
-              done,
-              { once: true }
-            );
-
-            setTimeout(
-              done,
-              2500
-            );
-
-            try {
-              m.load?.();
-            }
-            catch {}
-          })
+          )
       )
     );
 
@@ -1258,7 +1874,9 @@
         ...durations
       );
 
-    for (const m of media) {
+    for (
+      const m of media
+    ) {
       try {
         m.pause();
         m.currentTime = 0;
@@ -1267,17 +1885,19 @@
     }
 
     await Promise.all(
-      media.map(async m => {
-        try {
-          await m.play();
+      media.map(
+        async m => {
+          try {
+            await m.play();
+          }
+          catch (e) {
+            console.warn(
+              'Media playback could not start automatically',
+              e
+            );
+          }
         }
-        catch (e) {
-          console.warn(
-            'Media playback could not start automatically',
-            e
-          );
-        }
-      })
+      )
     );
 
     return {
@@ -1288,7 +1908,7 @@
         durations
     };
   }
-  async function captureTrial(s) {
+    async function captureTrial(s) {
     globalTrial++;
 
     const start =
@@ -1297,7 +1917,9 @@
     const configuredExposure =
       Math.max(
         0,
-        Number(s.exposure_ms) || 0
+        Number(
+          s.exposure_ms
+        ) || 0
       );
 
     const mediaInfo =
@@ -1311,14 +1933,17 @@
     const isi =
       Math.max(
         0,
-        Number(s.isi_ms) || 0
+        Number(
+          s.isi_ms
+        ) || 0
       );
 
     const validKeys =
       new Set(
         (cfg.responses || [])
           .map(
-            r => String(r.key)
+            r =>
+              String(r.key)
           )
       );
 
@@ -1326,13 +1951,16 @@
     const extras = [];
     let finished = false;
 
-    const responseForKey = key =>
-      (cfg.responses || [])
-        .find(
-          r =>
-            String(r.key) ===
-            String(key)
-        );
+
+    const responseForKey =
+      key =>
+        (cfg.responses || [])
+          .find(
+            r =>
+              String(r.key) ===
+              String(key)
+          );
+
 
     const recordKey = key => {
       if (
@@ -1348,7 +1976,9 @@
         performance.now();
 
       const event = {
-        key: String(key),
+        key:
+          String(key),
+
         rt_ms:
           Math.round(
             now - start
@@ -1358,10 +1988,14 @@
       if (!primary) {
         primary = event;
       }
+
       else {
-        extras.push(event);
+        extras.push(
+          event
+        );
       }
     };
+
 
     const keyHandler = e => {
       const key =
@@ -1371,34 +2005,41 @@
         validKeys.has(key)
       ) {
         e.preventDefault();
+
         recordKey(key);
       }
     };
+
 
     document.addEventListener(
       'keydown',
       keyHandler
     );
 
+
     document
       .querySelectorAll(
         '.response-bar [data-k]'
       )
-      .forEach(btn => {
-        btn.onclick = () => {
-          recordKey(
-            btn.dataset.k
-          );
-        };
-      });
+      .forEach(
+        btn => {
+          btn.onclick = () => {
+            recordKey(
+              btn.dataset.k
+            );
+          };
+        }
+      );
+
 
     /*
-      STIMULUS EXPOSURE
+      ==========================================
+      EXPOSURE
+      ==========================================
 
-      The stimulus remains visible for at least the
-      configured exposure duration. For audio/video,
-      exposure is automatically extended to the media
-      duration when necessary.
+      Stimulus + fixation are visible.
+
+      Fixation is outside #stage.
     */
 
     await new Promise(
@@ -1409,16 +2050,23 @@
         )
     );
 
+
     /*
+      ==========================================
       EXPOSURE -> ISI
+      ==========================================
 
-      Remove the stimulus from the full-screen stage.
+      CRITICAL FIX:
 
-      IMPORTANT:
-      fixation is recreated as a viewport-fixed overlay,
-      completely independent from #stage dimensions.
-      Therefore it stays in exactly the same screen
-      position before and after stimulus removal.
+      Remove ONLY stimulus content.
+
+      #trialFixation is a sibling of #stage,
+      therefore the exact same fixation DOM
+      element remains untouched.
+
+      No fixation recreation.
+      No repositioning.
+      No new coordinate context.
     */
 
     const stage =
@@ -1427,58 +2075,27 @@
       );
 
     if (stage) {
+      stage
+        .querySelectorAll(
+          'audio, video'
+        )
+        .forEach(
+          media => {
+            try {
+              media.pause();
+            }
+            catch {}
+          }
+        );
+
       stage.innerHTML = '';
     }
 
-    const oldOverlay =
-      document.querySelector(
-        '.trial-fixation-overlay'
-      );
-
-    if (oldOverlay) {
-      oldOverlay.remove();
-    }
-
-    if (s.fixation_html) {
-      const screen =
-        document.querySelector(
-          '.experiment-screen'
-        );
-
-      if (screen) {
-        const overlay =
-          document.createElement(
-            'div'
-          );
-
-        overlay.className =
-          'trial-fixation-overlay';
-
-        overlay.style.cssText = `
-          position:fixed;
-          left:50vw;
-          top:50vh;
-          width:0;
-          height:0;
-          z-index:1000;
-          pointer-events:none;
-        `;
-
-        overlay.innerHTML =
-          s.fixation_html;
-
-        screen.appendChild(
-          overlay
-        );
-      }
-    }
 
     /*
-      Response window.
-
-      If a fixed response window was explicitly supplied,
-      use it. Otherwise the response remains active through
-      the exposure + ISI period.
+      ==========================================
+      RESPONSE WINDOW / ISI
+      ==========================================
     */
 
     let remaining;
@@ -1498,11 +2115,15 @@
           ) - exposure
         );
     }
+
     else {
       remaining = isi;
     }
 
-    if (remaining > 0) {
+
+    if (
+      remaining > 0
+    ) {
       await new Promise(
         resolve =>
           setTimeout(
@@ -1512,6 +2133,13 @@
       );
     }
 
+
+    /*
+      ==========================================
+      END RESPONSE CAPTURE
+      ==========================================
+    */
+
     finished = true;
 
     document.removeEventListener(
@@ -1519,12 +2147,20 @@
       keyHandler
     );
 
+
     const response =
       primary
         ? responseForKey(
             primary.key
           )
         : null;
+
+
+    /*
+      ==========================================
+      TRIAL ROW
+      ==========================================
+    */
 
     const row = {
       experiment_id:
@@ -1579,23 +2215,32 @@
           isi,
 
         media_durations_ms:
-          mediaInfo.media_durations_ms,
+          mediaInfo
+            .media_durations_ms,
 
         extra_keypresses:
           extras
       }
     };
 
-    trialRows.push(row);
 
-    if (s.save !== false) {
+    trialRows.push(
+      row
+    );
+
+
+    if (
+      s.save !== false
+    ) {
       await CogDB.insertTrial(
         row
       );
     }
 
+
     return row;
   }
+
 
   function buildSummary() {
     const saved =
@@ -1603,14 +2248,19 @@
         r =>
           !String(
             r.block_name
-          ).toLowerCase()
-            .includes('practice')
+          )
+            .toLowerCase()
+            .includes(
+              'practice'
+            )
       );
+
 
     const missing =
       saved.filter(
         r => r.missing
       ).length;
+
 
     const missingRate =
       saved.length
@@ -1618,33 +2268,44 @@
           saved.length
         : 0;
 
+
     const control =
       trialRows.filter(
         r =>
           String(
             r.block_name
-          ).toLowerCase()
-            .includes('control')
+          )
+            .toLowerCase()
+            .includes(
+              'control'
+            )
       );
+
 
     const critical =
       trialRows.filter(
         r =>
           String(
             r.block_name
-          ).toLowerCase()
-            .includes('critical')
+          )
+            .toLowerCase()
+            .includes(
+              'critical'
+            )
       );
+
 
     const controlMissing =
       control.filter(
         r => r.missing
       ).length;
 
+
     const criticalMissing =
       critical.filter(
         r => r.missing
       ).length;
+
 
     const controlMissingRate =
       control.length
@@ -1652,27 +2313,41 @@
           control.length
         : 0;
 
+
     const criticalMissingRate =
       critical.length
         ? criticalMissing /
           critical.length
         : 0;
 
+
     let validity =
       'valid';
+
+
+    /*
+      Fixed Set validity rule:
+
+      More than 20% missing responses
+      in Control OR Critical invalidates
+      the participant session.
+    */
 
     if (
       cfg.template ===
       'uznadze_fixed_set'
     ) {
       if (
-        controlMissingRate > 0.20 ||
-        criticalMissingRate > 0.20
+        controlMissingRate >
+          0.20 ||
+        criticalMissingRate >
+          0.20
       ) {
         validity =
           'invalid_missing_responses';
       }
     }
+
 
     return {
       validity_status:
@@ -1713,18 +2388,33 @@
     };
   }
 
-  boot().catch(err => {
-    console.error(err);
 
-    show(`
-      <h2>Experiment error</h2>
+  /*
+    ==========================================
+    START
+    ==========================================
+  */
 
-      <div class="alert danger">
-        ${esc(
-          err?.message ||
-          String(err)
-        )}
-      </div>
-    `);
-  });
+  boot().catch(
+    err => {
+      console.error(err);
+
+      show(`
+        <h2>
+          Experiment error
+        </h2>
+
+        <div
+          class="alert danger">
+
+          ${esc(
+            err?.message ||
+            String(err)
+          )}
+
+        </div>
+      `);
+    }
+  );
+
 })();
