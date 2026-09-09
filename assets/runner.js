@@ -263,8 +263,8 @@
       const a=imageAttrs(s);
       return `<img class="${cls}" src="${s.url}" alt="" style="${a.style}">`;
     }
-    if((s.type||'').startsWith('video/')) return `<video class="${cls}" data-media src="${s.url}" autoplay playsinline></video>`;
-    if((s.type||'').startsWith('audio/')) return `<audio data-media src="${s.url}" autoplay></audio>`;
+    if((s.type||'').startsWith('video/')) return `<video class="${cls}" data-media src="${s.url}" preload="auto" playsinline></video>`;
+    if((s.type||'').startsWith('audio/')) return `<audio data-media src="${s.url}" preload="auto"></audio>`;
     return `<span>${esc(s.name||'Stimulus')}</span>`;
   }
 
@@ -365,7 +365,26 @@
     });
   }
 
-  function captureTrial(s){
+  async function prepareMedia(configuredExposure){
+    const media=[...document.querySelectorAll('[data-media]')];
+    if(!media.length) return {exposure_ms:configuredExposure,media_durations_ms:[]};
+    await Promise.all(media.map(m=>new Promise(resolve=>{
+      if(m.readyState>=1) return resolve();
+      const done=()=>{m.removeEventListener('loadedmetadata',done);m.removeEventListener('error',done);resolve();};
+      m.addEventListener('loadedmetadata',done,{once:true});m.addEventListener('error',done,{once:true});
+      setTimeout(done,2500);
+      try{m.load?.()}catch{}
+    })));
+    const durations=media.map(m=>Number.isFinite(m.duration)&&m.duration>0?m.duration*1000:0);
+    const exposure=Math.max(configuredExposure,...durations);
+    for(const m of media){try{m.pause();m.currentTime=0}catch{}}
+    await Promise.all(media.map(async m=>{try{await m.play()}catch(e){console.warn('Media playback could not start automatically',e)}}));
+    return {exposure_ms:exposure,media_durations_ms:durations};
+  }
+
+  async function captureTrial(s){
+    const configuredExposure=Math.max(0,+s.exposure_ms||0);
+    const mediaInfo=await prepareMedia(configuredExposure);
     const onset=performance.now(), valid=new Set((cfg.responses||[]).map(r=>r.key));
     let key='', rt=null, open=true;
     const extra=[];
@@ -379,7 +398,7 @@
       const kh=e=>{ if(valid.has(e.key)){ e.preventDefault(); take(e.key,'keyboard'); } };
       addEventListener('keydown',kh,{passive:false});
       document.querySelectorAll('[data-k]').forEach(b=>b.onpointerdown=()=>take(b.dataset.k,'button'));
-      const exposure=Math.max(0,+s.exposure_ms||0), isi=Math.max(0,+s.isi_ms||0);
+      const exposure=mediaInfo.exposure_ms, isi=Math.max(0,+s.isi_ms||0);
       let windowMs;
       if(s.response_window==='exposure_only') windowMs=exposure;
       else if(s.response_window==='custom_ms') windowMs=Math.max(0,+s.response_window_ms||0);
@@ -387,9 +406,9 @@
       const trialEndMs=Math.max(windowMs, exposure);
 
       setTimeout(()=>{
+        document.querySelectorAll('[data-media]').forEach(m=>{try{m.pause?.()}catch{}});
         const stage=document.getElementById('stage');
         if(stage) stage.innerHTML=s.fixation_html?`<div class="isi-fixation">${s.fixation_html}</div>`:'';
-        document.querySelectorAll('[data-media]').forEach(m=>m.pause?.());
         if(s.response_window==='exposure_only') open=false;
       }, exposure);
 
@@ -400,7 +419,7 @@
           experiment_id:exp.id,experiment_version:exp.version,session_id:session.id,participant_code:session.participant_code,
           block_name:s.block_name,global_trial:globalTrial,block_trial:s.block_trial,stimulus_name:s.stimulus_name,stimulus_type:s.stimulus_type,
           response_key:key,response_label:(cfg.responses||[]).find(r=>r.key===key)?.label||'',rt_ms:rt==null?null:+rt.toFixed(2),missing,
-          metadata:{...(s.metadata||{}),response_window:s.response_window,response_window_ms:windowMs,response_during:rt==null?'missing':(rt<=exposure?'exposure':'isi'),extra_keypress_count:extra.length,extra_keypresses:extra}
+          metadata:{...(s.metadata||{}),configured_exposure_ms:configuredExposure,effective_exposure_ms:exposure,media_durations_ms:mediaInfo.media_durations_ms,response_window:s.response_window,response_window_ms:windowMs,response_during:rt==null?'missing':(rt<=exposure?'exposure':'isi'),extra_keypress_count:extra.length,extra_keypresses:extra}
         };
         trialRows.push(row); if(s.save) await CogDB.insertTrial(row); resolve(row);
       }, trialEndMs);
@@ -425,12 +444,19 @@
     const control=blocks.find(b=>b.adaptive_role==='control'), critical=blocks.find(b=>b.adaptive_role==='critical');
     const c=control?trialRows.filter(x=>x.block_name===control.name):[], k=critical?trialRows.filter(x=>x.block_name===critical.name):[];
     const cm=c.length?c.filter(x=>x.missing).length/c.length:0, km=k.length?k.filter(x=>x.missing).length/k.length:0;
+    const ck=critical?adaptiveDirectionKeys(critical):{a:'1',equal:'2',b:'3'};
+    const contrastKey=adaptiveState.setVariant===0?ck.b:(adaptiveState.setVariant===1?ck.a:null);
+    const stopCount=critical?.stop_rule?.type==='consecutive_response'?+critical.stop_rule.count:0;
+    let endStreak=0; for(const t of k){endStreak=t.response_key===critical?.stop_rule?.key?endStreak+1:0;}
     return {
       validity_status:(control&&cm>.2)||(critical&&km>.2)?'invalid_missing_gt_20pct':'valid',
       natural_asymmetry:adaptiveState.asymmetry,
       set_variant:adaptiveState.setVariant==null?'':(adaptiveState.setVariant===0?'A':'B'),
       control_missing_rate:control?cm:null,
       critical_missing_rate:critical?km:null,
+      critical_contrast_count:contrastKey?k.filter(x=>x.response_key===contrastKey).length:null,
+      extinguished:!!(stopCount&&endStreak>=stopCount),
+      critical_trials:critical?k.length:null,
       calibration_px_per_mm:pxPerMm
     };
   }

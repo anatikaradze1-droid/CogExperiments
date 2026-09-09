@@ -1,0 +1,54 @@
+CogExperiments FINAL v7.1 — Verification Report
+
+Passed: 45/45
+
+[PASS] core file admin.html
+[PASS] core file run.html
+[PASS] core file index.html
+[PASS] core file assets/admin.js
+[PASS] core file assets/runner.js
+[PASS] core file assets/db.js
+[PASS] core file assets/config.js
+[PASS] core file supabase/schema.sql
+[PASS] admin contains verticalLinesPreset
+[PASS] admin contains auditoryPreset
+[PASS] admin contains Fixed Set — Circles
+[PASS] admin contains Fixed Set — Vertical Lines
+[PASS] admin contains Auditory Fixed Set
+[PASS] auditory calibration OFF
+[PASS] vertical calibration ON
+[PASS] auditory fixation none
+[PASS] critical stopping 10 equal
+[PASS] adaptive threshold .70
+[PASS] control role present
+[PASS] set role present
+[PASS] critical role present
+[PASS] media metadata preload
+[PASS] effective exposure uses media duration
+[PASS] media no autoplay markup
+[PASS] first response only
+[PASS] extra keypress recording
+[PASS] missing response recording
+[PASS] fixation survives ISI
+[PASS] generic contrast summary
+[PASS] generic extinction summary
+[PASS] asset assets/stimuli/vertical/01_equal_60_60.png
+[PASS] asset assets/stimuli/vertical/02_large_left_80_40.png
+[PASS] asset assets/stimuli/vertical/03_large_right_40_80.png
+[PASS] asset assets/stimuli/auditory/01_equal_equal.wav
+[PASS] asset assets/stimuli/auditory/02_set_loud_quiet.wav
+[PASS] asset assets/stimuli/auditory/03_set_quiet_loud.wav
+[PASS] 01_equal_equal.wav duration 2.5s — 2.5
+[PASS] 01_equal_equal.wav mono 16bit 44.1k
+[PASS] 02_set_loud_quiet.wav duration 2.5s — 2.5
+[PASS] 02_set_loud_quiet.wav mono 16bit 44.1k
+[PASS] 03_set_quiet_loud.wav duration 2.5s — 2.5
+[PASS] 03_set_quiet_loud.wav mono 16bit 44.1k
+[PASS] build v7.1
+[PASS] admin.html cache bust v7.1
+[PASS] run.html cache bust v7.1
+
+Waveform verification:
+01_equal_equal.wav: RMS1=0.281056, RMS2=0.281056, ratio=1.000
+02_set_loud_quiet.wav: RMS1=0.562126, RMS2=0.281056, ratio=2.000
+03_set_quiet_loud.wav: RMS1=0.281056, RMS2=0.562126, ratio=0.500
