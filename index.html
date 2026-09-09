@@ -2,208 +2,159 @@
 <html lang="ka">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="CogExperiments — cognitive and experimental psychology research platform.">
-  <title>CogExperiments</title>
-
-  <link rel="stylesheet" href="assets/app.css?v=7.2.1">
-  <link rel="stylesheet" href="assets/landing.css?v=7.2.1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#fbfaf8">
+  <meta name="description" content="CogExperiments — კოგნიტური და ექსპერიმენტული ფსიქოლოგიის კვლევითი პლატფორმა.">
+  <title>CogExperiments — Cognitive Science Platform</title>
+  <link rel="stylesheet" href="assets/landing.css?v=7.3.0">
 </head>
-
-<body class="ce-public-body">
-
-  <header class="ce-nav">
-    <a class="ce-brand" href="/">
-      <strong>CogExperiments</strong>
-      <span>Experiments for a deeper understanding of the mind</span>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="CogExperiments მთავარი გვერდი">
+      <span class="brand-name">CogExperiments</span>
+      <span class="brand-subtitle">Experiments for a deeper understanding of the mind</span>
     </a>
 
-    <nav class="ce-nav-links" aria-label="Main navigation">
+    <nav class="main-nav" aria-label="მთავარი ნავიგაცია">
+      <a href="#top" class="active">Home</a>
+      <a href="#about">About</a>
       <a href="#studies">Research</a>
     </nav>
 
-    <div class="ce-account-actions">
-      <span id="userBadge" class="ce-user-badge hidden"></span>
-      <button id="loginOpen" class="ce-nav-button" type="button">შესვლა</button>
-      <button id="registerOpen" class="ce-nav-button ce-nav-button-primary" type="button">რეგისტრაცია</button>
-      <button id="logoutBtn" class="ce-nav-button hidden" type="button">გასვლა</button>
+    <div class="account-actions">
+      <span id="userBadge" class="user-pill hidden"></span>
+      <button id="loginOpen" class="text-button" type="button">შესვლა</button>
+      <button id="registerOpen" class="outline-button" type="button">რეგისტრაცია</button>
+      <button id="logoutBtn" class="outline-button hidden" type="button">გასვლა</button>
     </div>
   </header>
 
-  <main>
-
-    <section class="ce-hero">
-      <div class="ce-hero-copy">
-        <div class="ce-kicker">COGNITIVE SCIENCE PLATFORM</div>
-
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">COGNITIVE SCIENCE PLATFORM</div>
         <h1>CogExperiments</h1>
-        <h2>Explore the architecture of the mind.</h2>
+        <p class="hero-tagline">Explore the architecture of the mind.</p>
+        <p class="hero-lead">კოგნიტური და ექსპერიმენტული ფსიქოლოგიის კვლევითი პლატფორმა.</p>
 
-        <p class="ce-hero-ge">
-          კოგნიტური და ექსპერიმენტული ფსიქოლოგიის კვლევითი პლატფორმა.
-        </p>
-
-        <div class="ce-domains">
-          <div class="ce-domain">
-            <span class="ce-domain-icon">◌</span>
-            <div>
-              <strong>PERCEPTION</strong>
-              <span>აღქმა</span>
-            </div>
+        <div class="domain-row" aria-label="კვლევის მიმართულებები">
+          <div class="domain-item">
+            <span class="domain-icon">◉</span>
+            <div><strong>PERCEPTION</strong><small>აღქმა</small></div>
           </div>
-
-          <div class="ce-domain">
-            <span class="ce-domain-icon">⌁</span>
-            <div>
-              <strong>COGNITION</strong>
-              <span>კოგნიცია</span>
-            </div>
+          <div class="domain-item">
+            <span class="domain-icon">⌁</span>
+            <div><strong>COGNITION</strong><small>კოგნიცია</small></div>
           </div>
-
-          <div class="ce-domain">
-            <span class="ce-domain-icon">◎</span>
-            <div>
-              <strong>BEHAVIOR</strong>
-              <span>ქცევა</span>
-            </div>
+          <div class="domain-item">
+            <span class="domain-icon">◎</span>
+            <div><strong>BEHAVIOR</strong><small>ქცევა</small></div>
           </div>
         </div>
       </div>
 
-      <div class="ce-mind-visual" aria-hidden="true">
-        <div class="ce-stage ce-stage-stimulus">
-          <span>Stimulus</span>
-          <i></i>
-        </div>
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 820 460" role="img">
+          <defs>
+            <linearGradient id="bgWash" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#efe6dc" stop-opacity=".9"/>
+              <stop offset=".48" stop-color="#dfe9e5" stop-opacity=".82"/>
+              <stop offset="1" stop-color="#e7dff0" stop-opacity=".86"/>
+            </linearGradient>
+            <linearGradient id="mindWash" x1="0" x2="1">
+              <stop offset="0" stop-color="#b8cbc5" stop-opacity=".44"/>
+              <stop offset="1" stop-color="#a99fbd" stop-opacity=".38"/>
+            </linearGradient>
+            <filter id="blur"><feGaussianBlur stdDeviation="22"/></filter>
+          </defs>
 
-        <div class="ce-stage ce-stage-processing">
-          <span>Processing</span>
-          <i></i>
-        </div>
+          <ellipse cx="418" cy="232" rx="335" ry="168" fill="url(#bgWash)" opacity=".66" filter="url(#blur)"/>
+          <path d="M415 86c75-43 177-26 218 43 24 40 17 88-3 123-10 18-18 37-14 58 4 20 16 35 27 48-46 15-91 8-132-18-43-28-76-74-90-124-13-48-12-98-6-130Z" fill="#d9d9e9" opacity=".72"/>
+          <path d="M260 173c70-46 151-31 201 20 54 55 66 143 15 198-79 10-153-16-205-67-45-44-66-103-46-151 10-1 21-1 35 0Z" fill="url(#mindWash)" opacity=".94"/>
 
-        <div class="ce-stage ce-stage-response">
-          <span>Response</span>
-          <i></i>
-        </div>
+          <g fill="none" stroke="#697a91" stroke-width="1.2" opacity=".56">
+            <path d="M61 250c84 2 103 82 182 57 58-18 77-77 137-70 66 8 101 57 166 57 51 0 83-31 132-33 35-1 57 10 81 22"/>
+            <path d="M61 260c84 9 105 69 180 49 60-17 81-68 139-62 66 7 102 49 167 47 50-2 81-27 130-29 34-2 58 7 83 18"/>
+            <path d="M61 270c85 16 108 57 179 41 63-15 86-59 140-54 66 7 103 41 168 37 49-3 78-23 128-25 34-2 59 5 84 14"/>
+            <path d="M61 280c87 23 111 46 177 33 66-13 91-50 142-46 65 6 105 33 169 27 48-4 76-19 126-21 34-2 60 3 85 10"/>
+            <path d="M61 290c88 29 114 35 176 25 69-11 96-42 143-38 65 5 106 25 170 17 46-5 73-15 124-17 34-1 60 1 86 6"/>
+          </g>
 
-        <div class="ce-wave ce-wave-1"></div>
-        <div class="ce-wave ce-wave-2"></div>
-        <div class="ce-wave ce-wave-3"></div>
+          <g>
+            <circle cx="72" cy="252" r="22" fill="#829b94" opacity=".38"/>
+            <circle cx="155" cy="272" r="36" fill="#adb9aa" opacity=".43"/>
+            <circle cx="216" cy="253" r="6" fill="#6b8582"/>
+            <circle cx="371" cy="295" r="7" fill="#617d7d"/>
+            <circle cx="477" cy="267" r="14" fill="#678184" opacity=".8"/>
+            <circle cx="583" cy="253" r="19" fill="#837fa6" opacity=".72"/>
+            <circle cx="735" cy="257" r="27" fill="#c1b1cc" opacity=".38"/>
+          </g>
 
-        <div class="ce-orb ce-orb-a"></div>
-        <div class="ce-orb ce-orb-b"></div>
-        <div class="ce-orb ce-orb-c"></div>
-        <div class="ce-orb ce-orb-d"></div>
-
-        <blockquote>
-          “A deeper understanding<br>of human cognition.”
-        </blockquote>
+          <g fill="#24324a" font-family="Georgia, serif" font-size="17">
+            <text x="177" y="199">Stimulus</text>
+            <text x="420" y="219">Processing</text>
+            <text x="646" y="198">Response</text>
+          </g>
+          <line x1="647" y1="380" x2="778" y2="380" stroke="#8d8597" stroke-opacity=".3"/>
+          <text x="630" y="350" fill="#736d82" font-family="Georgia, serif" font-size="16" font-style="italic">“A deeper understanding</text>
+          <text x="673" y="373" fill="#736d82" font-family="Georgia, serif" font-size="16" font-style="italic">of human cognition.”</text>
+        </svg>
       </div>
     </section>
 
-    <section id="studies" class="ce-studies">
-      <div class="ce-section-heading">
+    <section id="studies" class="studies-section">
+      <div class="section-heading">
         <div>
-          <div class="ce-kicker">OPEN STUDIES</div>
+          <div class="eyebrow">OPEN STUDIES</div>
           <h2>მიმდინარე კვლევები</h2>
           <p>აირჩიეთ ექსპერიმენტი მონაწილეობის მისაღებად.</p>
         </div>
-
-        <label class="ce-search">
-          <span>⌕</span>
-          <input
-            id="experimentSearch"
-            type="search"
-            placeholder="ექსპერიმენტის ძიება..."
-            aria-label="ექსპერიმენტის ძიება"
-          >
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="experimentSearch" type="search" placeholder="ექსპერიმენტის ძიება..." aria-label="ექსპერიმენტის ძიება">
         </label>
       </div>
 
-      <div id="experimentList" class="ce-experiment-grid">
-        <div class="ce-loading">იტვირთება...</div>
+      <div id="experimentList" class="study-grid" aria-live="polite">
+        <div class="loading-card">იტვირთება...</div>
       </div>
     </section>
 
-    <section class="ce-research-values">
-      <article>
-        <span>◇</span>
-        <div>
-          <strong>Participant privacy</strong>
-          <p>კვლევის მონაცემები ინახება კონტროლირებად გარემოში.</p>
-        </div>
-      </article>
-
-      <article>
-        <span>⌘</span>
-        <div>
-          <strong>Built for research</strong>
-          <p>სტრუქტურირებული მონაცემები და ექსპორტი კვლევითი ანალიზისთვის.</p>
-        </div>
-      </article>
-
-      <article>
-        <span>□</span>
-        <div>
-          <strong>Evidence-oriented</strong>
-          <p>ექსპერიმენტები იქმნება განსაზღვრული კვლევითი პროტოკოლებისა და პარამეტრების მიხედვით.</p>
-        </div>
-      </article>
-
-      <article>
-        <span>∿</span>
-        <div>
-          <strong>Cognitive science</strong>
-          <p>აღქმა, კოგნიცია, მეხსიერება და ქცევა — ერთ კვლევით სივრცეში.</p>
-        </div>
-      </article>
+    <section id="about" class="trust-strip">
+      <article><span class="trust-icon">◇</span><div><strong>Participant privacy</strong><p>კვლევის მონაცემები ინახება კონტროლირებად გარემოში.</p></div></article>
+      <article><span class="trust-icon">⌘</span><div><strong>Built for research</strong><p>სტრუქტურირებული მონაცემები და ექსპორტი კვლევითი ანალიზისთვის.</p></div></article>
+      <article><span class="trust-icon">□</span><div><strong>Evidence-oriented</strong><p>კვლევითი პროცედურები ეფუძნება განსაზღვრულ პროტოკოლებსა და პარამეტრებს.</p></div></article>
+      <article><span class="trust-icon">∿</span><div><strong>Cognitive science</strong><p>აღქმა, კოგნიცია, მეხსიერება და ქცევა — ერთ კვლევით სივრცეში.</p></div></article>
     </section>
-
   </main>
 
-  <footer class="ce-footer">
+  <footer class="site-footer">
     <strong>CogExperiments</strong>
     <span>Research · Cognition · Behavior</span>
     <em>Science today. A deeper understanding tomorrow.</em>
   </footer>
 
-  <div id="authModal" class="ce-modal-backdrop hidden">
-    <section class="ce-auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-      <button id="authClose" class="ce-modal-close" type="button" aria-label="Close">×</button>
-
-      <div class="ce-kicker">COGEXPERIMENTS ACCOUNT</div>
+  <div id="authModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <section class="auth-card">
+      <button id="authClose" class="modal-close" type="button" aria-label="დახურვა">×</button>
+      <div class="eyebrow">COGEXPERIMENTS ACCOUNT</div>
       <h2 id="authTitle">შესვლა</h2>
-      <p>ანგარიში საშუალებას გაძლევთ მართოთ თქვენი სესია ამ მოწყობილობაზე.</p>
-
-      <div class="ce-auth-tabs">
-        <button id="loginTab" class="ce-auth-tab active" type="button">შესვლა</button>
-        <button id="registerTab" class="ce-auth-tab" type="button">რეგისტრაცია</button>
+      <p class="auth-intro">ანგარიში საშუალებას გაძლევთ მართოთ თქვენი სესია ამ მოწყობილობაზე.</p>
+      <div class="auth-tabs">
+        <button id="loginTab" class="active" type="button">შესვლა</button>
+        <button id="registerTab" type="button">რეგისტრაცია</button>
       </div>
-
-      <label class="ce-field">
-        <span>Email</span>
-        <input id="authEmail" type="email" autocomplete="email">
-      </label>
-
-      <label class="ce-field">
-        <span>პაროლი</span>
-        <input id="authPassword" type="password" autocomplete="current-password">
-      </label>
-
-      <div id="authMessage" class="ce-auth-message hidden"></div>
-
-      <button id="authSubmit" class="ce-auth-submit" type="button">შესვლა</button>
-
-      <small>
-        რეგისტრირებული ანგარიში ავტომატურად არ იღებს ადმინისტრატორის უფლებებს.
-      </small>
+      <label class="field"><span>Email</span><input id="authEmail" type="email" autocomplete="email"></label>
+      <label class="field"><span>პაროლი</span><input id="authPassword" type="password" autocomplete="current-password"></label>
+      <div id="authMessage" class="auth-message hidden"></div>
+      <button id="authSubmit" class="primary-action" type="button">შესვლა</button>
+      <p class="auth-note">რეგისტრირებული ანგარიში ავტომატურად არ იღებს ადმინისტრატორის უფლებებს.</p>
     </section>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/config.js?v=7.2.1"></script>
-  <script src="assets/db.js?v=7.2.1"></script>
-  <script src="assets/landing.js?v=7.2.1"></script>
-
+  <script src="assets/config.js?v=7.1.0"></script>
+  <script src="assets/db.js?v=7.2.0"></script>
+  <script src="assets/landing.js?v=7.3.0"></script>
 </body>
 </html>
