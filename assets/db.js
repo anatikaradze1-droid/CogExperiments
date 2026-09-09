@@ -2,7 +2,7 @@
   const C=window.COG_CONFIG||{}, configured=!!(C.SUPABASE_URL&&C.SUPABASE_PUBLISHABLE_KEY);
   const demo=C.DEMO_MODE||!configured;
   const sb=!demo&&window.supabase?window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_PUBLISHABLE_KEY):null;
-  const KEY="cogexperiments_v5";
+  const KEY="cogexperiments_v6_2";
   const uuid=()=>crypto.randomUUID();
   function demoData(){let d=JSON.parse(localStorage.getItem(KEY)||"null");if(d)return d;d={experiments:[],sessions:[],trials:[]};localStorage.setItem(KEY,JSON.stringify(d));return d}
   const saveDemo=d=>localStorage.setItem(KEY,JSON.stringify(d));

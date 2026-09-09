@@ -1,34 +1,44 @@
-# CogExperiments — BUILDER + FIXED SET v5
+# CogExperiments v6.2 — Universal Calibrated Visual Builder
 
-This build adds a free-form experiment timeline and the first scientific preset: **Uznadze Fixed Set**.
+This build keeps the Uznadze circle Fixed Set preset, but **does not hard-code vertical-line stimuli**. New visual experiments can be assembled from uploaded files.
 
-## New in v5
-- Independent **Instruction Screen** elements can be inserted anywhere in the timeline.
-- Optional block-specific instructions.
-- Independent timed **Break** elements with custom messages.
-- Editable completion message.
-- Create menu: **Blank experiment** or **Uznadze Fixed Set** preset.
-- Uznadze preset includes:
-  - physical screen calibration using an 85.60 mm bank/ID card;
-  - Practice (equal figures, max/default 3, excluded from analysis);
-  - Control (default 15 equal-pair trials);
-  - 5-minute Control→Set break;
-  - Set / Induction (default 15 trials, 80:40 mm);
-  - natural-asymmetry calculation and set-side selection;
-  - Critical (60:60 mm, max 40, stop after 10 consecutive `2` responses);
-  - 1000 ms exposure and 1500 ms ISI defaults;
-  - calibrated black circles and central red fixation point.
-- Generic Builder still supports arbitrary image/audio/video uploads, timings, response mappings, stopping rules, and free block names.
-- Research-friendly Excel export remains available.
+## New in v6.2
 
-## Important
-`DEMO_MODE` is still `true` until Supabase is connected. Demo data are stored only in this browser's localStorage.
+- Universal physical screen calibration using an 85.60 mm bank/ID card.
+- Uploaded visual stimuli are visible in the Builder with preview cards.
+- Two physical scaling modes for each image:
+  1. **Whole image canvas** — set the full image Width/Height in mm.
+  2. **Measured object / reference box** — define X/Y/W/H percentages for a known object inside the image, then give that object a real Width or Height in mm. The entire image is scaled from that reference while preserving geometry.
+- Single/scene presentation or Pair presentation.
+- Block-level fixation options:
+  - generated red dot,
+  - uploaded fixation image,
+  - none.
+- Fixation size can be calibrated in mm.
+- During ISI the stimulus disappears but fixation remains.
+- `Until next stimulus` response window: a response made during ISI is recorded for the previous trial; RT is measured from stimulus onset.
+- Optional `Exposure only` and `Custom ms` response windows.
+- Orientation/viewport changes invalidate calibration and force recalibration before the next trial.
+- Participant page refreshes the latest published experiment definition at start.
+- Generic Builder timeline remains fully editable: Instruction / Block / Break.
+- Vertical lines are intentionally NOT included as a preset. Upload them to test that the generic calibrated workflow works.
 
-## Production setup
-1. Create a fresh Supabase project.
-2. Run `supabase/schema.sql`.
-3. Create admin users manually in Supabase Authentication.
-4. Add each admin UUID to `public.admin_users`.
-5. Put the Supabase Project URL + publishable key in `assets/config.js`.
-6. Set `DEMO_MODE: false`.
-7. Commit the files to the `CogExperiments` GitHub repository.
+## Recommended vertical-line test
+
+Create a Blank experiment and make separate blocks as needed. Upload the line-pair PNG to the block as a **Single / complete scene image**. Choose `Measured object / reference box`, place the reference box around one known line, and set only that line's real height (for example 60 mm). The complete PNG will then be scaled from that measured line. The central fixation is overlaid separately and remains visible during ISI.
+
+For images cropped tightly to the stimulus, `Whole image canvas` mode is simpler.
+
+## Response timing example
+
+If Exposure = 1000 ms and ISI = 1500 ms with `Until next stimulus`, the response window is 2500 ms total:
+
+- 0–1000 ms: stimulus + fixation visible.
+- 1000–2500 ms: stimulus hidden, fixation remains; responses still belong to the current/previously shown trial.
+- At 2500 ms the next trial starts and the old response window closes.
+
+## Demo vs Supabase
+
+`assets/config.js` ships with `DEMO_MODE: true`. For live Supabase use, fill in the project URL and publishable key, then set `DEMO_MODE: false`.
+
+Do not put a Supabase secret/service-role key in browser code.
