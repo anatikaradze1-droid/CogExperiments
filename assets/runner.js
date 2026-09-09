@@ -595,15 +595,13 @@
     }
 
     if (
-      b.adaptive_role ===
-      'control'
+      b.adaptive_role === 'control'
     ) {
       adaptiveState.controlResponses = [];
     }
 
     if (
-      b.adaptive_role ===
-      'set'
+      b.adaptive_role === 'set'
     ) {
       adaptiveState.setVariant =
         determineGenericSetVariant(b);
@@ -613,8 +611,7 @@
 
     for (
       let i = 1;
-      i <=
-      Math.max(
+      i <= Math.max(
         1,
         Number(b.trials) || 1
       );
@@ -626,8 +623,7 @@
         await genericTrial(b, i);
 
       if (
-        b.adaptive_role ===
-        'control'
+        b.adaptive_role === 'control'
       ) {
         adaptiveState.controlResponses.push(
           r.response_key
@@ -646,9 +642,7 @@
 
         if (
           streak >=
-          Number(
-            b.stop_rule.count
-          )
+          Number(b.stop_rule.count)
         ) {
           break;
         }
@@ -658,8 +652,7 @@
 
   function fixationHTML(b) {
     if (
-      b.fixation?.mode ===
-      'none'
+      b.fixation?.mode === 'none'
     ) {
       return '';
     }
@@ -683,7 +676,7 @@
         class="fixation"
         style="
           width:${size}px;
-          height:${size}px
+          height:${size}px;
         ">
       </div>
     `;
@@ -697,8 +690,7 @@
 
     if (stimuli.length) {
       if (
-        b.adaptive_role ===
-        'set' &&
+        b.adaptive_role === 'set' &&
         adaptiveState.setVariant != null
       ) {
         selected = [
@@ -767,32 +759,31 @@
 
         <div
           id="stage"
-          class="stimulus-stage"
-          style="position:relative;">
+          class="stimulus-stage">
 
           ${stimulusHTML}
 
-          ${
-            fixation
-              ? `
-                <div
-                  style="
-                    position:absolute;
-                    left:50%;
-                    top:50%;
-                    transform:translate(-50%,-50%);
-                    z-index:100;
-                    pointer-events:none;
-                    display:grid;
-                    place-items:center;
-                  ">
-                  ${fixation}
-                </div>
-              `
-              : ''
-          }
-
         </div>
+
+        ${
+          fixation
+            ? `
+              <div
+                class="trial-fixation-overlay"
+                style="
+                  position:fixed;
+                  left:50vw;
+                  top:50vh;
+                  width:0;
+                  height:0;
+                  z-index:1000;
+                  pointer-events:none;
+                ">
+                ${fixation}
+              </div>
+            `
+            : ''
+        }
 
         <div class="response-bar">
           ${(cfg.responses || [])
@@ -900,8 +891,7 @@
     if (stage === 'practice') {
       for (
         let i = 1;
-        i <=
-        Math.min(
+        i <= Math.min(
           3,
           Number(
             f.practice_trials
@@ -925,8 +915,7 @@
 
       for (
         let i = 1;
-        i <=
-        Number(
+        i <= Number(
           f.control_trials
         );
         i++
@@ -953,8 +942,7 @@
 
       for (
         let i = 1;
-        i <=
-        Number(
+        i <= Number(
           f.set_trials
         );
         i++
@@ -989,8 +977,7 @@
 
       for (
         let i = 1;
-        i <=
-        Number(
+        i <= Number(
           f.critical_max_trials
         );
         i++
@@ -1004,8 +991,7 @@
             true,
             {
               stage,
-              set_side:
-                setSide
+              set_side: setSide
             }
           );
 
@@ -1112,7 +1098,7 @@
         class="fixation"
         style="
           width:${fix}px;
-          height:${fix}px
+          height:${fix}px;
         ">
       </div>
     `;
@@ -1133,7 +1119,7 @@
               class="circle-stim"
               style="
                 width:${lmm * p}px;
-                height:${lmm * p}px
+                height:${lmm * p}px;
               ">
             </div>
 
@@ -1145,7 +1131,7 @@
               class="circle-stim"
               style="
                 width:${rmm * p}px;
-                height:${rmm * p}px
+                height:${rmm * p}px;
               ">
             </div>
 
@@ -1302,449 +1288,3 @@
         durations
     };
   }
-
-  async function captureTrial(s) {
-    const configuredExposure =
-      Math.max(
-        0,
-        Number(
-          s.exposure_ms
-        ) || 0
-      );
-
-    const mediaInfo =
-      await prepareMedia(
-        configuredExposure
-      );
-
-    const onset =
-      performance.now();
-
-    const valid =
-      new Set(
-        (cfg.responses || [])
-          .map(
-            r => r.key
-          )
-      );
-
-    let key = '';
-    let rt = null;
-    let open = true;
-
-    const extra = [];
-
-    return new Promise(resolve => {
-      const take = (
-        k,
-        source = 'keyboard'
-      ) => {
-        if (
-          !open ||
-          !valid.has(k)
-        ) {
-          return;
-        }
-
-        const now =
-          performance.now() -
-          onset;
-
-        if (!key) {
-          key = k;
-          rt = now;
-        }
-
-        else {
-          extra.push({
-            key: k,
-            rt_ms:
-              Number(
-                now.toFixed(2)
-              ),
-            source
-          });
-        }
-      };
-
-      const kh = e => {
-        if (
-          valid.has(e.key)
-        ) {
-          e.preventDefault();
-
-          take(
-            e.key,
-            'keyboard'
-          );
-        }
-      };
-
-      addEventListener(
-        'keydown',
-        kh,
-        {
-          passive: false
-        }
-      );
-
-      document
-        .querySelectorAll(
-          '[data-k]'
-        )
-        .forEach(
-          b =>
-            b.onpointerdown =
-              () =>
-                take(
-                  b.dataset.k,
-                  'button'
-                )
-        );
-
-      const exposure =
-        mediaInfo.exposure_ms;
-
-      const isi =
-        Math.max(
-          0,
-          Number(
-            s.isi_ms
-          ) || 0
-        );
-
-      let windowMs;
-
-      if (
-        s.response_window ===
-        'exposure_only'
-      ) {
-        windowMs =
-          exposure;
-      }
-
-      else if (
-        s.response_window ===
-        'custom_ms'
-      ) {
-        windowMs =
-          Math.max(
-            0,
-            Number(
-              s.response_window_ms
-            ) || 0
-          );
-      }
-
-      else {
-        windowMs =
-          exposure + isi;
-      }
-
-      const trialEndMs =
-        Math.max(
-          windowMs,
-          exposure
-        );
-
-      setTimeout(
-        () => {
-          document
-            .querySelectorAll(
-              '[data-media]'
-            )
-            .forEach(m => {
-              try {
-                m.pause?.();
-              }
-              catch {}
-            });
-
-          const stage =
-            document.getElementById(
-              'stage'
-            );
-
-          if (stage) {
-            stage.innerHTML =
-              s.fixation_html
-                ? `<div class="isi-fixation">${s.fixation_html}</div>`
-                : '';
-          }
-
-          if (
-            s.response_window ===
-            'exposure_only'
-          ) {
-            open = false;
-          }
-        },
-        exposure
-      );
-
-      setTimeout(
-        async () => {
-          open = false;
-
-          removeEventListener(
-            'keydown',
-            kh
-          );
-
-          globalTrial++;
-
-          const missing =
-            !key;
-
-          const row = {
-            experiment_id:
-              exp.id,
-
-            experiment_version:
-              exp.version,
-
-            session_id:
-              session.id,
-
-            participant_code:
-              session.participant_code,
-
-            block_name:
-              s.block_name,
-
-            global_trial:
-              globalTrial,
-
-            block_trial:
-              s.block_trial,
-
-            stimulus_name:
-              s.stimulus_name,
-
-            stimulus_type:
-              s.stimulus_type,
-
-            response_key:
-              key,
-
-            response_label:
-              (
-                cfg.responses ||
-                []
-              ).find(
-                r =>
-                  r.key === key
-              )?.label || '',
-
-            rt_ms:
-              rt == null
-                ? null
-                : Number(
-                    rt.toFixed(2)
-                  ),
-
-            missing,
-
-            metadata: {
-              ...(s.metadata || {}),
-
-              configured_exposure_ms:
-                configuredExposure,
-
-              effective_exposure_ms:
-                exposure,
-
-              media_durations_ms:
-                mediaInfo
-                  .media_durations_ms,
-
-              response_window:
-                s.response_window,
-
-              response_window_ms:
-                windowMs,
-
-              response_during:
-                rt == null
-                  ? 'missing'
-                  : (
-                      rt <= exposure
-                        ? 'exposure'
-                        : 'isi'
-                    ),
-
-              extra_keypress_count:
-                extra.length,
-
-              extra_keypresses:
-                extra
-            }
-          };
-
-          trialRows.push(row);
-
-          if (s.save) {
-            await CogDB.insertTrial(
-              row
-            );
-          }
-
-          resolve(row);
-        },
-        trialEndMs
-      );
-    });
-  }
-
-  function buildSummary() {
-    if (
-      cfg.template ===
-      'uznadze_fixed_set'
-    ) {
-      const bad =
-        controlResponses.filter(
-          k =>
-            k === '1' ||
-            k === '3'
-        );
-
-      const left =
-        bad.filter(
-          k => k === '1'
-        ).length;
-
-      const right =
-        bad.filter(
-          k => k === '3'
-        ).length;
-
-      let asym =
-        'none';
-
-      if (
-        bad.length &&
-        left / bad.length >
-        (
-          cfg.fixed_set
-            ?.natural_asymmetry_threshold ||
-          0.7
-        )
-      ) {
-        asym = 'left';
-      }
-
-      if (
-        bad.length &&
-        right / bad.length >
-        (
-          cfg.fixed_set
-            ?.natural_asymmetry_threshold ||
-          0.7
-        )
-      ) {
-        asym = 'right';
-      }
-
-      const control =
-        trialRows.filter(
-          x =>
-            x.block_name ===
-            'Control'
-        );
-
-      const critical =
-        trialRows.filter(
-          x =>
-            x.block_name ===
-            'Critical'
-        );
-
-      const cm =
-        control.length
-          ? control.filter(
-              x => x.missing
-            ).length /
-            control.length
-          : 0;
-
-      const km =
-        critical.length
-          ? critical.filter(
-              x => x.missing
-            ).length /
-            critical.length
-          : 0;
-
-      return {
-        validity_status:
-          cm > 0.2 ||
-          km > 0.2
-            ? 'invalid_missing_gt_20pct'
-            : 'valid',
-
-        set_side:
-          setSide,
-
-        natural_asymmetry:
-          asym,
-
-        control_missing_rate:
-          cm,
-
-        critical_missing_rate:
-          km,
-
-        critical_contrast_count:
-          critical.filter(
-            x =>
-              x.response_key ===
-              (
-                setSide === 'left'
-                  ? '3'
-                  : '1'
-              )
-          ).length,
-
-        extinguished:
-          criticalEndedByStreak,
-
-        critical_trials:
-          critical.length,
-
-        calibration_px_per_mm:
-          pxPerMm
-      };
-    }
-
-    return {
-      validity_status:
-        'valid',
-
-      natural_asymmetry:
-        adaptiveState.asymmetry,
-
-      set_variant:
-        adaptiveState.setVariant ==
-        null
-          ? ''
-          : (
-              adaptiveState.setVariant ===
-              0
-                ? 'A'
-                : 'B'
-            ),
-
-      calibration_px_per_mm:
-        pxPerMm
-    };
-  }
-
-  boot().catch(e => {
-    console.error(e);
-
-    show(`
-      <h2>Error</h2>
-      <p>${esc(e.message)}</p>
-    `);
-  });
-})();
