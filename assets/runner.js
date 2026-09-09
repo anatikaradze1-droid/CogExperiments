@@ -1288,3 +1288,443 @@
         durations
     };
   }
+  async function captureTrial(s) {
+    globalTrial++;
+
+    const start =
+      performance.now();
+
+    const configuredExposure =
+      Math.max(
+        0,
+        Number(s.exposure_ms) || 0
+      );
+
+    const mediaInfo =
+      await prepareMedia(
+        configuredExposure
+      );
+
+    const exposure =
+      mediaInfo.exposure_ms;
+
+    const isi =
+      Math.max(
+        0,
+        Number(s.isi_ms) || 0
+      );
+
+    const validKeys =
+      new Set(
+        (cfg.responses || [])
+          .map(
+            r => String(r.key)
+          )
+      );
+
+    let primary = null;
+    const extras = [];
+    let finished = false;
+
+    const responseForKey = key =>
+      (cfg.responses || [])
+        .find(
+          r =>
+            String(r.key) ===
+            String(key)
+        );
+
+    const recordKey = key => {
+      if (
+        finished ||
+        !validKeys.has(
+          String(key)
+        )
+      ) {
+        return;
+      }
+
+      const now =
+        performance.now();
+
+      const event = {
+        key: String(key),
+        rt_ms:
+          Math.round(
+            now - start
+          )
+      };
+
+      if (!primary) {
+        primary = event;
+      }
+      else {
+        extras.push(event);
+      }
+    };
+
+    const keyHandler = e => {
+      const key =
+        String(e.key);
+
+      if (
+        validKeys.has(key)
+      ) {
+        e.preventDefault();
+        recordKey(key);
+      }
+    };
+
+    document.addEventListener(
+      'keydown',
+      keyHandler
+    );
+
+    document
+      .querySelectorAll(
+        '.response-bar [data-k]'
+      )
+      .forEach(btn => {
+        btn.onclick = () => {
+          recordKey(
+            btn.dataset.k
+          );
+        };
+      });
+
+    /*
+      STIMULUS EXPOSURE
+
+      The stimulus remains visible for at least the
+      configured exposure duration. For audio/video,
+      exposure is automatically extended to the media
+      duration when necessary.
+    */
+
+    await new Promise(
+      resolve =>
+        setTimeout(
+          resolve,
+          exposure
+        )
+    );
+
+    /*
+      EXPOSURE -> ISI
+
+      Remove the stimulus from the full-screen stage.
+
+      IMPORTANT:
+      fixation is recreated as a viewport-fixed overlay,
+      completely independent from #stage dimensions.
+      Therefore it stays in exactly the same screen
+      position before and after stimulus removal.
+    */
+
+    const stage =
+      document.getElementById(
+        'stage'
+      );
+
+    if (stage) {
+      stage.innerHTML = '';
+    }
+
+    const oldOverlay =
+      document.querySelector(
+        '.trial-fixation-overlay'
+      );
+
+    if (oldOverlay) {
+      oldOverlay.remove();
+    }
+
+    if (s.fixation_html) {
+      const screen =
+        document.querySelector(
+          '.experiment-screen'
+        );
+
+      if (screen) {
+        const overlay =
+          document.createElement(
+            'div'
+          );
+
+        overlay.className =
+          'trial-fixation-overlay';
+
+        overlay.style.cssText = `
+          position:fixed;
+          left:50vw;
+          top:50vh;
+          width:0;
+          height:0;
+          z-index:1000;
+          pointer-events:none;
+        `;
+
+        overlay.innerHTML =
+          s.fixation_html;
+
+        screen.appendChild(
+          overlay
+        );
+      }
+    }
+
+    /*
+      Response window.
+
+      If a fixed response window was explicitly supplied,
+      use it. Otherwise the response remains active through
+      the exposure + ISI period.
+    */
+
+    let remaining;
+
+    if (
+      s.response_window ===
+        'fixed' &&
+      Number(
+        s.response_window_ms
+      ) > 0
+    ) {
+      remaining =
+        Math.max(
+          0,
+          Number(
+            s.response_window_ms
+          ) - exposure
+        );
+    }
+    else {
+      remaining = isi;
+    }
+
+    if (remaining > 0) {
+      await new Promise(
+        resolve =>
+          setTimeout(
+            resolve,
+            remaining
+          )
+      );
+    }
+
+    finished = true;
+
+    document.removeEventListener(
+      'keydown',
+      keyHandler
+    );
+
+    const response =
+      primary
+        ? responseForKey(
+            primary.key
+          )
+        : null;
+
+    const row = {
+      experiment_id:
+        exp.id,
+
+      experiment_version:
+        exp.version,
+
+      session_id:
+        session.id,
+
+      participant_code:
+        session.participant_code,
+
+      block_name:
+        s.block_name,
+
+      global_trial:
+        globalTrial,
+
+      block_trial:
+        s.block_trial,
+
+      stimulus_name:
+        s.stimulus_name || '',
+
+      stimulus_type:
+        s.stimulus_type || '',
+
+      response_key:
+        primary?.key || null,
+
+      response_label:
+        response?.label || null,
+
+      rt_ms:
+        primary?.rt_ms ?? null,
+
+      missing:
+        !primary,
+
+      metadata: {
+        ...(s.metadata || {}),
+
+        configured_exposure_ms:
+          configuredExposure,
+
+        effective_exposure_ms:
+          exposure,
+
+        isi_ms:
+          isi,
+
+        media_durations_ms:
+          mediaInfo.media_durations_ms,
+
+        extra_keypresses:
+          extras
+      }
+    };
+
+    trialRows.push(row);
+
+    if (s.save !== false) {
+      await CogDB.insertTrial(
+        row
+      );
+    }
+
+    return row;
+  }
+
+  function buildSummary() {
+    const saved =
+      trialRows.filter(
+        r =>
+          !String(
+            r.block_name
+          ).toLowerCase()
+            .includes('practice')
+      );
+
+    const missing =
+      saved.filter(
+        r => r.missing
+      ).length;
+
+    const missingRate =
+      saved.length
+        ? missing /
+          saved.length
+        : 0;
+
+    const control =
+      trialRows.filter(
+        r =>
+          String(
+            r.block_name
+          ).toLowerCase()
+            .includes('control')
+      );
+
+    const critical =
+      trialRows.filter(
+        r =>
+          String(
+            r.block_name
+          ).toLowerCase()
+            .includes('critical')
+      );
+
+    const controlMissing =
+      control.filter(
+        r => r.missing
+      ).length;
+
+    const criticalMissing =
+      critical.filter(
+        r => r.missing
+      ).length;
+
+    const controlMissingRate =
+      control.length
+        ? controlMissing /
+          control.length
+        : 0;
+
+    const criticalMissingRate =
+      critical.length
+        ? criticalMissing /
+          critical.length
+        : 0;
+
+    let validity =
+      'valid';
+
+    if (
+      cfg.template ===
+      'uznadze_fixed_set'
+    ) {
+      if (
+        controlMissingRate > 0.20 ||
+        criticalMissingRate > 0.20
+      ) {
+        validity =
+          'invalid_missing_responses';
+      }
+    }
+
+    return {
+      validity_status:
+        validity,
+
+      total_trials:
+        trialRows.length,
+
+      saved_trials:
+        saved.length,
+
+      missing_responses:
+        missing,
+
+      missing_rate:
+        missingRate,
+
+      control_missing_rate:
+        controlMissingRate,
+
+      critical_missing_rate:
+        criticalMissingRate,
+
+      set_side:
+        setSide || null,
+
+      critical_ended_by_streak:
+        criticalEndedByStreak,
+
+      adaptive_asymmetry:
+        adaptiveState.asymmetry,
+
+      adaptive_set_variant:
+        adaptiveState.setVariant,
+
+      px_per_mm:
+        pxPerMm
+    };
+  }
+
+  boot().catch(err => {
+    console.error(err);
+
+    show(`
+      <h2>Experiment error</h2>
+
+      <div class="alert danger">
+        ${esc(
+          err?.message ||
+          String(err)
+        )}
+      </div>
+    `);
+  });
+})();
