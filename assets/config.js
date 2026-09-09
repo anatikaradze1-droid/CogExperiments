@@ -1,1 +1,1 @@
-window.COG_CONFIG = {SUPABASE_URL:"",SUPABASE_PUBLISHABLE_KEY:"",DEMO_MODE:true,BUILD:"7.0.0-final-universal-builder"};
+window.COG_CONFIG = {SUPABASE_URL:"https://enruimuqgueryqchpgps.supabase.co",SUPABASE_PUBLISHABLE_KEY:"sb_publishable_zh7DbI5dllhjaZT4ywUGrw_2hxuQ4IB",DEMO_MODE:false,BUILD:"7.1.0-final-three-presets-audio-fix"};
