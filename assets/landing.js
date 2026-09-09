@@ -1,207 +1,165 @@
 (() => {
-  const cfg = window.COG_CONFIG || {};
+  const $ = id => document.getElementById(id);
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_PUBLISHABLE_KEY) {
-    document.getElementById("experimentList").innerHTML =
-      '<div class="card">Supabase configuration is missing.</div>';
-    return;
-  }
+  const list = $('experimentList');
+  const search = $('experimentSearch');
+  const modal = $('authModal');
+  const title = $('authTitle');
+  const email = $('authEmail');
+  const password = $('authPassword');
+  const msg = $('authMessage');
+  const submit = $('authSubmit');
+  let mode = 'login';
+  let studies = [];
 
-  const sb = window.supabase.createClient(
-    cfg.SUPABASE_URL,
-    cfg.SUPABASE_PUBLISHABLE_KEY
-  );
+  const classify = exp => {
+    const s = `${exp.name || ''} ${exp.description || ''} ${exp.slug || ''}`.toLowerCase();
+    if (s.includes('auditory') || s.includes('audio') || s.includes('sound')) return {kind:'auditory', category:'AUDITORY PERCEPTION'};
+    if (s.includes('vertical') || s.includes('line')) return {kind:'visual', category:'VISUAL PERCEPTION'};
+    if (s.includes('uznadze') || s.includes('circle') || s.includes('fixed set')) return {kind:'fixedset', category:'PERCEPTION · FIXED SET'};
+    return {kind:'general', category:'COGNITIVE EXPERIMENT'};
+  };
 
-  const experimentList = document.getElementById("experimentList");
+  const visualMarkup = kind => {
+    if (kind === 'auditory') return '<div class="ce-wave"></div>';
+    if (kind === 'visual') return '<div class="ce-lines"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>';
+    if (kind === 'fixedset') return '<div class="ce-circles"></div>';
+    return '<div class="ce-wave"></div>';
+  };
 
-  const authModal = document.getElementById("authModal");
-  const authTitle = document.getElementById("authTitle");
-  const authEmail = document.getElementById("authEmail");
-  const authPassword = document.getElementById("authPassword");
-  const authMessage = document.getElementById("authMessage");
-  const authSubmit = document.getElementById("authSubmit");
-
-  const loginOpen = document.getElementById("loginOpen");
-  const registerOpen = document.getElementById("registerOpen");
-  const loginTab = document.getElementById("loginTab");
-  const registerTab = document.getElementById("registerTab");
-  const authClose = document.getElementById("authClose");
-
-  const logoutBtn = document.getElementById("logoutBtn");
-  const userBadge = document.getElementById("userBadge");
-
-  let authMode = "login";
-
-  function escapeHTML(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+  function renderStudies(rows) {
+    if (!rows.length) {
+      list.innerHTML = '<div class="ce-empty-card">ამჟამად ამ ძიებას შესაბამისი გამოქვეყნებული ექსპერიმენტი არ მოიძებნა.</div>';
+      return;
+    }
+    list.innerHTML = rows.map(exp => {
+      const meta = classify(exp);
+      const description = exp.description || 'კვლევის მოკლე აღწერა ჯერ არ არის მითითებული.';
+      return `<article class="ce-study-card" data-kind="${meta.kind}">
+        <div class="ce-study-visual">${visualMarkup(meta.kind)}</div>
+        <div class="ce-study-body">
+          <div class="ce-study-category">${meta.category}</div>
+          <h3>${esc(exp.name)}</h3>
+          <p class="ce-study-description">${esc(description)}</p>
+          <a class="ce-study-action" href="run.html?exp=${encodeURIComponent(exp.slug)}">კვლევაში მონაწილეობა <span aria-hidden="true">→</span></a>
+        </div>
+      </article>`;
+    }).join('');
   }
 
   async function loadExperiments() {
-    experimentList.innerHTML =
-      '<div class="card muted">იტვირთება...</div>';
-
-    const { data, error } = await sb
-      .from("experiments")
-      .select("id,slug,name,description,status,version,created_at")
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error(error);
-
-      experimentList.innerHTML =
-        '<div class="card">ექსპერიმენტების ჩატვირთვა ვერ მოხერხდა.</div>';
-
-      return;
+    try {
+      studies = await CogDB.experiments(false);
+      renderStudies(studies);
+    } catch (error) {
+      list.innerHTML = `<div class="ce-empty-card">ექსპერიმენტების ჩატვირთვა ვერ მოხერხდა: ${esc(error.message)}</div>`;
     }
-
-    if (!data || data.length === 0) {
-      experimentList.innerHTML =
-        '<div class="card muted">ამჟამად გამოქვეყნებული ექსპერიმენტები არ არის.</div>';
-
-      return;
-    }
-
-    experimentList.innerHTML = data.map(exp => `
-      <article class="card experiment-public-card">
-        <div class="eyebrow">ექსპერიმენტი</div>
-
-        <h3>${escapeHTML(exp.name)}</h3>
-
-        <p class="muted">
-          ${escapeHTML(exp.description || "აღწერა არ არის მითითებული.")}
-        </p>
-
-        <div class="actions">
-          <a
-            class="btn primary"
-            href="run.html?slug=${encodeURIComponent(exp.slug)}"
-          >
-            მონაწილეობა
-          </a>
-        </div>
-      </article>
-    `).join("");
   }
 
-  function setAuthMode(mode) {
-    authMode = mode;
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    if (!q) return renderStudies(studies);
+    renderStudies(studies.filter(exp => `${exp.name || ''} ${exp.description || ''}`.toLowerCase().includes(q)));
+  });
 
-    const login = mode === "login";
-
-    authTitle.textContent = login ? "შესვლა" : "რეგისტრაცია";
-    authSubmit.textContent = login ? "შესვლა" : "რეგისტრაცია";
-
-    loginTab.classList.toggle("primary", login);
-    registerTab.classList.toggle("primary", !login);
-
-    authPassword.autocomplete =
-      login ? "current-password" : "new-password";
-
-    authMessage.classList.add("hidden");
-    authMessage.textContent = "";
+  function setMode(next) {
+    mode = next;
+    const reg = mode === 'register';
+    title.textContent = reg ? 'რეგისტრაცია' : 'შესვლა';
+    submit.textContent = reg ? 'ანგარიშის შექმნა' : 'შესვლა';
+    $('loginTab').classList.toggle('active', !reg);
+    $('registerTab').classList.toggle('active', reg);
+    password.autocomplete = reg ? 'new-password' : 'current-password';
+    msg.classList.add('hidden');
+    msg.classList.remove('danger');
   }
 
-  function openAuth(mode) {
-    setAuthMode(mode);
-    authModal.classList.remove("hidden");
-    authEmail.focus();
+  function openAuth(next) {
+    setMode(next);
+    modal.classList.remove('hidden');
+    setTimeout(() => email.focus(), 0);
   }
 
   function closeAuth() {
-    authModal.classList.add("hidden");
-    authMessage.classList.add("hidden");
-    authMessage.textContent = "";
+    modal.classList.add('hidden');
+    password.value = '';
+    msg.classList.add('hidden');
   }
+
+  $('loginOpen').onclick = () => openAuth('login');
+  $('registerOpen').onclick = () => openAuth('register');
+  $('loginTab').onclick = () => setMode('login');
+  $('registerTab').onclick = () => setMode('register');
+  $('authClose').onclick = closeAuth;
+  modal.onclick = event => { if (event.target === modal) closeAuth(); };
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAuth(); });
 
   async function refreshUser() {
-    const {
-      data: { user }
-    } = await sb.auth.getUser();
+    const user = await CogDB.user();
+    const badge = $('userBadge');
+    const login = $('loginOpen');
+    const reg = $('registerOpen');
+    const logout = $('logoutBtn');
 
-    if (user) {
-      userBadge.textContent = user.email || "User";
-      userBadge.classList.remove("hidden");
-
-      logoutBtn.classList.remove("hidden");
-      loginOpen.classList.add("hidden");
-      registerOpen.classList.add("hidden");
-    } else {
-      userBadge.classList.add("hidden");
-      logoutBtn.classList.add("hidden");
-
-      loginOpen.classList.remove("hidden");
-      registerOpen.classList.remove("hidden");
+    if (!user) {
+      badge.classList.add('hidden');
+      login.classList.remove('hidden');
+      reg.classList.remove('hidden');
+      logout.classList.add('hidden');
+      return;
     }
+
+    badge.textContent = user.email || 'Signed in';
+    badge.classList.remove('hidden');
+    login.classList.add('hidden');
+    reg.classList.add('hidden');
+    logout.classList.remove('hidden');
   }
 
-  loginOpen.addEventListener("click", () => openAuth("login"));
-  registerOpen.addEventListener("click", () => openAuth("register"));
+  submit.onclick = async () => {
+    const em = email.value.trim();
+    const pw = password.value;
 
-  loginTab.addEventListener("click", () => setAuthMode("login"));
-  registerTab.addEventListener("click", () => setAuthMode("register"));
-
-  authClose.addEventListener("click", closeAuth);
-
-  authModal.addEventListener("click", event => {
-    if (event.target === authModal) closeAuth();
-  });
-
-  authSubmit.addEventListener("click", async () => {
-    const email = authEmail.value.trim();
-    const password = authPassword.value;
-
-    authMessage.classList.remove("hidden");
-    authMessage.textContent = "გთხოვთ დაელოდოთ...";
-
-    if (!email || !password) {
-      authMessage.textContent = "შეიყვანეთ Email და პაროლი.";
+    if (!em || !pw) {
+      msg.textContent = 'შეიყვანეთ Email და პაროლი.';
+      msg.className = 'ce-auth-message danger';
+      return;
+    }
+    if (mode === 'register' && pw.length < 6) {
+      msg.textContent = 'პაროლი უნდა შეიცავდეს მინიმუმ 6 სიმბოლოს.';
+      msg.className = 'ce-auth-message danger';
       return;
     }
 
-    let result;
-
-    if (authMode === "login") {
-      result = await sb.auth.signInWithPassword({
-        email,
-        password
-      });
-    } else {
-      result = await sb.auth.signUp({
-        email,
-        password
-      });
+    submit.disabled = true;
+    try {
+      if (mode === 'register') {
+        const data = await CogDB.signUp(em, pw);
+        if (data.session) {
+          closeAuth();
+          await refreshUser();
+        } else {
+          msg.textContent = 'ანგარიში შეიქმნა. თუ Email confirmation ჩართულია, შეამოწმეთ ელფოსტა.';
+          msg.className = 'ce-auth-message';
+        }
+      } else {
+        await CogDB.signIn(em, pw);
+        closeAuth();
+        await refreshUser();
+      }
+    } catch (error) {
+      msg.textContent = error.message;
+      msg.className = 'ce-auth-message danger';
+    } finally {
+      submit.disabled = false;
     }
+  };
 
-    if (result.error) {
-      authMessage.textContent = result.error.message;
-      return;
-    }
-
-    if (authMode === "register" && !result.data.session) {
-      authMessage.textContent =
-        "რეგისტრაცია დასრულდა. თუ Email confirmation ჩართულია, შეამოწმეთ ელფოსტა.";
-      return;
-    }
-
-    closeAuth();
+  $('logoutBtn').onclick = async () => {
+    await CogDB.signOut();
     await refreshUser();
-  });
+  };
 
-  logoutBtn.addEventListener("click", async () => {
-    await sb.auth.signOut();
-    await refreshUser();
-  });
-
-  sb.auth.onAuthStateChange(() => {
-    setTimeout(refreshUser, 0);
-  });
-
-  loadExperiments();
-  refreshUser();
+  Promise.all([loadExperiments(), refreshUser()]).catch(console.error);
 })();
