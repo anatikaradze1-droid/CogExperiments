@@ -1,0 +1,23 @@
+(() => {
+  const C=window.COG_CONFIG||{}, configured=!!(C.SUPABASE_URL&&C.SUPABASE_PUBLISHABLE_KEY);
+  const demo=C.DEMO_MODE||!configured;
+  const sb=!demo&&window.supabase?window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_PUBLISHABLE_KEY):null;
+  const KEY="cogexperiments_final_clean_v4";
+  const uuid=()=>crypto.randomUUID();
+  function demoData(){let d=JSON.parse(localStorage.getItem(KEY)||"null");if(d)return d;d={experiments:[],sessions:[],trials:[]};localStorage.setItem(KEY,JSON.stringify(d));return d}
+  const saveDemo=d=>localStorage.setItem(KEY,JSON.stringify(d));
+  async function signIn(email,password){if(demo)return{user:{id:"demo-admin",email:"demo@local"}};const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;return data}
+  async function signOut(){if(!demo)await sb.auth.signOut()}
+  async function user(){if(demo)return{id:"demo-admin",email:"demo@local"};const {data}=await sb.auth.getUser();return data.user}
+  async function admin(){if(demo)return true;const {data,error}=await sb.rpc("is_platform_admin");return !error&&!!data}
+  async function experiments(adminView=false){if(demo)return demoData().experiments.slice().sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""));let q=sb.from("experiments").select("*").order("created_at",{ascending:false});if(!adminView)q=q.eq("status","published");const {data,error}=await q;if(error)throw error;return data||[]}
+  async function experimentBySlug(slug){if(demo)return demoData().experiments.find(e=>e.slug===slug&&e.status==="published")||null;const {data,error}=await sb.from("experiments").select("*").eq("slug",slug).eq("status","published").maybeSingle();if(error)throw error;return data}
+  async function saveExperiment(e){if(demo){const d=demoData();const row={...e,id:e.id||uuid(),created_at:e.created_at||new Date().toISOString()};const i=d.experiments.findIndex(x=>x.id===row.id);i>=0?d.experiments[i]=row:d.experiments.push(row);saveDemo(d);return row}const {data,error}=await sb.from("experiments").upsert(e).select().single();if(error)throw error;return data}
+  async function deleteExperiment(id){if(demo){const d=demoData();d.experiments=d.experiments.filter(x=>x.id!==id);saveDemo(d);return}const {error}=await sb.from("experiments").delete().eq("id",id);if(error)throw error}
+  async function uploadStimulus(file){if(demo){if(file.size>4_000_000)throw new Error("Demo Mode-ში თითო ფაილი მაქსიმუმ 4 MB.");const url=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});return{name:file.name,type:file.type,size:file.size,url}}const ext=(file.name.split(".").pop()||"bin").replace(/[^a-z0-9]/gi,"");const path=`${uuid()}.${ext}`;const {error}=await sb.storage.from("stimuli").upload(path,file,{contentType:file.type});if(error)throw error;const {data}=sb.storage.from("stimuli").getPublicUrl(path);return{name:file.name,type:file.type,size:file.size,url:data.publicUrl,path}}
+  async function createSession(row){row={id:uuid(),created_at:new Date().toISOString(),...row};if(demo){const d=demoData();d.sessions.push(row);saveDemo(d);return row}const {data,error}=await sb.from("sessions").insert(row).select().single();if(error)throw error;return data}
+  async function insertTrial(row){row={id:uuid(),created_at:new Date().toISOString(),...row};if(demo){const d=demoData();d.trials.push(row);saveDemo(d);return row}const {error}=await sb.from("trials").insert(row);if(error)throw error;return row}
+  async function finishSession(id,summary){if(demo){const d=demoData(),s=d.sessions.find(x=>x.id===id);if(s)Object.assign(s,{completed_at:new Date().toISOString(),summary,validity_status:summary.validity_status||""});saveDemo(d);return}const {error}=await sb.rpc("finish_participant_session",{p_session_id:id,p_summary:summary});if(error)throw error}
+  async function results(experimentId=""){if(demo){const d=demoData();return{sessions:experimentId?d.sessions.filter(x=>x.experiment_id===experimentId):d.sessions,trials:experimentId?d.trials.filter(x=>x.experiment_id===experimentId):d.trials}}let a=sb.from("sessions").select("*").order("created_at",{ascending:false}),b=sb.from("trials").select("*").order("created_at",{ascending:true});if(experimentId){a=a.eq("experiment_id",experimentId);b=b.eq("experiment_id",experimentId)}const [sa,tb]=await Promise.all([a,b]);if(sa.error)throw sa.error;if(tb.error)throw tb.error;return{sessions:sa.data||[],trials:tb.data||[]}}
+  window.CogDB={demo,sb,signIn,signOut,user,admin,experiments,experimentBySlug,saveExperiment,deleteExperiment,uploadStimulus,createSession,insertTrial,finishSession,results};
+})();
