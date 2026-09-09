@@ -1,54 +1,209 @@
-CogExperiments experiments for a deeper understanding of the mind
-Home About Research
-შესვლა რეგისტრაცია გასვლა
-COGNITIVE SCIENCE PLATFORM
-CogExperiments
-Explore the architecture of the mind.
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CogExperiments — cognitive and experimental psychology research platform.">
+  <title>CogExperiments</title>
 
-კოგნიტური და ექსპერიმენტული ფსიქოლოგიის კვლევითი პლატფორმა.
+  <link rel="stylesheet" href="assets/app.css?v=7.2.1">
+  <link rel="stylesheet" href="assets/landing.css?v=7.2.1">
+</head>
 
-◌
-PERCEPTIONაღქმა
-⌁
-COGNITIONკოგნიცია
-◎
-BEHAVIORქცევა
-Stimulus
-Processing
-Response
-“A deeper understanding
-of human cognition.”
-OPEN STUDIES
-მიმდინარე კვლევები
-აირჩიეთ ექსპერიმენტი მონაწილეობის მისაღებად.
+<body class="ce-public-body">
 
-⌕ 
-ექსპერიმენტის ძიება...
-იტვირთება...
-◇
-Participant privacy
-კვლევის მონაცემები ინახება კონტროლირებად გარემოში.
+  <header class="ce-nav">
+    <a class="ce-brand" href="/">
+      <strong>CogExperiments</strong>
+      <span>Experiments for a deeper understanding of the mind</span>
+    </a>
 
-⌘
-Built for research
-სტრუქტურირებული მონაცემები და ექსპორტი კვლევითი ანალიზისთვის.
+    <nav class="ce-nav-links" aria-label="Main navigation">
+      <a href="#studies">Research</a>
+    </nav>
 
-□
-Evidence-oriented
-ექსპერიმენტები იქმნება განსაზღვრული კვლევითი პროტოკოლებისა და პარამეტრების მიხედვით.
+    <div class="ce-account-actions">
+      <span id="userBadge" class="ce-user-badge hidden"></span>
+      <button id="loginOpen" class="ce-nav-button" type="button">შესვლა</button>
+      <button id="registerOpen" class="ce-nav-button ce-nav-button-primary" type="button">რეგისტრაცია</button>
+      <button id="logoutBtn" class="ce-nav-button hidden" type="button">გასვლა</button>
+    </div>
+  </header>
 
-∿
-Cognitive science
-აღქმა, კოგნიცია, მეხსიერება და ქცევა — ერთ კვლევით სივრცეში.
+  <main>
 
-CogExperiments Research · Cognition · Behavior Science today. A deeper understanding tomorrow.
-×
-COGEXPERIMENTS ACCOUNT
-შესვლა
-ანგარიში საშუალებას გაძლევთ მართოთ თქვენი სესია ამ მოწყობილობაზე.
+    <section class="ce-hero">
+      <div class="ce-hero-copy">
+        <div class="ce-kicker">COGNITIVE SCIENCE PLATFORM</div>
 
-შესვლა რეგისტრაცია
-Email
- პაროლი
-შესვლა
-რეგისტრირებული ანგარიში ავტომატურად არ იღებს ადმინისტრატორის უფლებებს.
+        <h1>CogExperiments</h1>
+        <h2>Explore the architecture of the mind.</h2>
+
+        <p class="ce-hero-ge">
+          კოგნიტური და ექსპერიმენტული ფსიქოლოგიის კვლევითი პლატფორმა.
+        </p>
+
+        <div class="ce-domains">
+          <div class="ce-domain">
+            <span class="ce-domain-icon">◌</span>
+            <div>
+              <strong>PERCEPTION</strong>
+              <span>აღქმა</span>
+            </div>
+          </div>
+
+          <div class="ce-domain">
+            <span class="ce-domain-icon">⌁</span>
+            <div>
+              <strong>COGNITION</strong>
+              <span>კოგნიცია</span>
+            </div>
+          </div>
+
+          <div class="ce-domain">
+            <span class="ce-domain-icon">◎</span>
+            <div>
+              <strong>BEHAVIOR</strong>
+              <span>ქცევა</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ce-mind-visual" aria-hidden="true">
+        <div class="ce-stage ce-stage-stimulus">
+          <span>Stimulus</span>
+          <i></i>
+        </div>
+
+        <div class="ce-stage ce-stage-processing">
+          <span>Processing</span>
+          <i></i>
+        </div>
+
+        <div class="ce-stage ce-stage-response">
+          <span>Response</span>
+          <i></i>
+        </div>
+
+        <div class="ce-wave ce-wave-1"></div>
+        <div class="ce-wave ce-wave-2"></div>
+        <div class="ce-wave ce-wave-3"></div>
+
+        <div class="ce-orb ce-orb-a"></div>
+        <div class="ce-orb ce-orb-b"></div>
+        <div class="ce-orb ce-orb-c"></div>
+        <div class="ce-orb ce-orb-d"></div>
+
+        <blockquote>
+          “A deeper understanding<br>of human cognition.”
+        </blockquote>
+      </div>
+    </section>
+
+    <section id="studies" class="ce-studies">
+      <div class="ce-section-heading">
+        <div>
+          <div class="ce-kicker">OPEN STUDIES</div>
+          <h2>მიმდინარე კვლევები</h2>
+          <p>აირჩიეთ ექსპერიმენტი მონაწილეობის მისაღებად.</p>
+        </div>
+
+        <label class="ce-search">
+          <span>⌕</span>
+          <input
+            id="experimentSearch"
+            type="search"
+            placeholder="ექსპერიმენტის ძიება..."
+            aria-label="ექსპერიმენტის ძიება"
+          >
+        </label>
+      </div>
+
+      <div id="experimentList" class="ce-experiment-grid">
+        <div class="ce-loading">იტვირთება...</div>
+      </div>
+    </section>
+
+    <section class="ce-research-values">
+      <article>
+        <span>◇</span>
+        <div>
+          <strong>Participant privacy</strong>
+          <p>კვლევის მონაცემები ინახება კონტროლირებად გარემოში.</p>
+        </div>
+      </article>
+
+      <article>
+        <span>⌘</span>
+        <div>
+          <strong>Built for research</strong>
+          <p>სტრუქტურირებული მონაცემები და ექსპორტი კვლევითი ანალიზისთვის.</p>
+        </div>
+      </article>
+
+      <article>
+        <span>□</span>
+        <div>
+          <strong>Evidence-oriented</strong>
+          <p>ექსპერიმენტები იქმნება განსაზღვრული კვლევითი პროტოკოლებისა და პარამეტრების მიხედვით.</p>
+        </div>
+      </article>
+
+      <article>
+        <span>∿</span>
+        <div>
+          <strong>Cognitive science</strong>
+          <p>აღქმა, კოგნიცია, მეხსიერება და ქცევა — ერთ კვლევით სივრცეში.</p>
+        </div>
+      </article>
+    </section>
+
+  </main>
+
+  <footer class="ce-footer">
+    <strong>CogExperiments</strong>
+    <span>Research · Cognition · Behavior</span>
+    <em>Science today. A deeper understanding tomorrow.</em>
+  </footer>
+
+  <div id="authModal" class="ce-modal-backdrop hidden">
+    <section class="ce-auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button id="authClose" class="ce-modal-close" type="button" aria-label="Close">×</button>
+
+      <div class="ce-kicker">COGEXPERIMENTS ACCOUNT</div>
+      <h2 id="authTitle">შესვლა</h2>
+      <p>ანგარიში საშუალებას გაძლევთ მართოთ თქვენი სესია ამ მოწყობილობაზე.</p>
+
+      <div class="ce-auth-tabs">
+        <button id="loginTab" class="ce-auth-tab active" type="button">შესვლა</button>
+        <button id="registerTab" class="ce-auth-tab" type="button">რეგისტრაცია</button>
+      </div>
+
+      <label class="ce-field">
+        <span>Email</span>
+        <input id="authEmail" type="email" autocomplete="email">
+      </label>
+
+      <label class="ce-field">
+        <span>პაროლი</span>
+        <input id="authPassword" type="password" autocomplete="current-password">
+      </label>
+
+      <div id="authMessage" class="ce-auth-message hidden"></div>
+
+      <button id="authSubmit" class="ce-auth-submit" type="button">შესვლა</button>
+
+      <small>
+        რეგისტრირებული ანგარიში ავტომატურად არ იღებს ადმინისტრატორის უფლებებს.
+      </small>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/config.js?v=7.2.1"></script>
+  <script src="assets/db.js?v=7.2.1"></script>
+  <script src="assets/landing.js?v=7.2.1"></script>
+
+</body>
+</html>
