@@ -1,44 +1,103 @@
-# CogExperiments v6.2 — Universal Calibrated Visual Builder
+# CogExperiments — Final Universal Builder v7.0
 
-This build keeps the Uznadze circle Fixed Set preset, but **does not hard-code vertical-line stimuli**. New visual experiments can be assembled from uploaded files.
+Static GitHub Pages + Supabase experiment platform.
 
-## New in v6.2
+## Included final capabilities
 
-- Universal physical screen calibration using an 85.60 mm bank/ID card.
-- Uploaded visual stimuli are visible in the Builder with preview cards.
-- Two physical scaling modes for each image:
-  1. **Whole image canvas** — set the full image Width/Height in mm.
-  2. **Measured object / reference box** — define X/Y/W/H percentages for a known object inside the image, then give that object a real Width or Height in mm. The entire image is scaled from that reference while preserving geometry.
-- Single/scene presentation or Pair presentation.
-- Block-level fixation options:
-  - generated red dot,
-  - uploaded fixation image,
-  - none.
-- Fixation size can be calibrated in mm.
-- During ISI the stimulus disappears but fixation remains.
-- `Until next stimulus` response window: a response made during ISI is recorded for the previous trial; RT is measured from stimulus onset.
-- Optional `Exposure only` and `Custom ms` response windows.
-- Orientation/viewport changes invalidate calibration and force recalibration before the next trial.
-- Participant page refreshes the latest published experiment definition at start.
-- Generic Builder timeline remains fully editable: Instruction / Block / Break.
-- Vertical lines are intentionally NOT included as a preset. Upload them to test that the generic calibrated workflow works.
+- Universal free-form timeline: Instruction / Block / Break.
+- Upload image, audio, and video stimuli.
+- Visual physical-size calibration using a standard 85.60 mm bank/ID card.
+- Image scaling by whole-canvas physical size or measured reference box.
+- Response windows: exposure only, until next stimulus, or custom milliseconds.
+- Responses during ISI can belong to the current/previous stimulus trial when `Until next stimulus` is selected.
+- `Sequential / uploaded order`, `Random`, and participant-stable `Pseudorandom / balanced` stimulus order.
+- Pseudorandom order balances stimulus counts as closely as possible and avoids runs longer than 2 when feasible.
+- Only the first valid response is the trial response. Any additional valid keypresses on the same trial are recorded as extra keypress metadata and excluded from the main response.
+- Explicit missing-response recording when no valid response is made before the response window closes.
+- Fixation options: red dot, uploaded image, or none. If fixation is enabled, it remains visible during ISI; `None` stays blank during ISI.
+- Optional generic Adaptive Fixed-Set roles: Control / Set / Critical.
+  - Control directional responses determine natural asymmetry using configurable keys and threshold.
+  - Set uses exactly one of the first two uploaded variants for the entire block.
+  - If Control directional errors exceed the threshold, the matching Set variant is chosen.
+  - Otherwise participant-level deterministic counterbalancing chooses A or B.
+- Optional generic stopping rule: stop after N consecutive occurrences of a response key.
+- Research-friendly Excel export with Participants, Trial_Data, and Experiment_Settings sheets.
+- Trial export includes missing status, response timing, extra-keypress count/details, stimulus order, and adaptive Fixed-Set metadata.
+- Participant data are not readable by participants under the supplied Supabase RLS schema.
+- Admin interface is login-only; no public registration button.
 
-## Recommended vertical-line test
+## Included Uznadze circle preset
 
-Create a Blank experiment and make separate blocks as needed. Upload the line-pair PNG to the block as a **Single / complete scene image**. Choose `Measured object / reference box`, place the reference box around one known line, and set only that line's real height (for example 60 mm). The complete PNG will then be scaled from that measured line. The central fixation is overlaid separately and remains visible during ISI.
+`Create experiment → Uznadze Fixed Set` creates the built-in calibrated circle task. Circles are generated programmatically, not uploaded images.
 
-For images cropped tightly to the stimulus, `Whole image canvas` mode is simpler.
+Defaults:
 
-## Response timing example
+- Practice: 3 equal-circle trials, not saved.
+- Control: 15 equal-circle trials.
+- Control → Set break: 300 seconds.
+- Set: 15 trials, 80 mm vs 40 mm.
+- Control/Critical equal circles: 60 mm.
+- Exposure: 1000 ms.
+- ISI: 1500 ms.
+- Fixation: red dot, 3 mm.
+- Pair gap: 15 mm.
+- Natural-asymmetry threshold: >70% of directional errors.
+- If asymmetry is present, Set large side matches that directional tendency; otherwise participant-level counterbalancing is used.
+- Critical starts immediately after Set.
+- Critical stops after 10 consecutive `2 = equal` responses or at 40 trials.
+- Control/Critical missing rate >20% marks the session invalid.
+- Summary includes set side, natural asymmetry, missing rates, contrast count, extinction status, and critical trial count.
 
-If Exposure = 1000 ms and ISI = 1500 ms with `Until next stimulus`, the response window is 2500 ms total:
+## Generic uploaded Fixed-Set tasks (lines, auditory, etc.)
 
-- 0–1000 ms: stimulus + fixation visible.
-- 1000–2500 ms: stimulus hidden, fixation remains; responses still belong to the current/previously shown trial.
-- At 2500 ms the next trial starts and the old response window closes.
+For a custom uploaded task, build it as a normal Blank Experiment. To use adaptive orientation:
 
-## Demo vs Supabase
+1. Mark the equal baseline block as `Adaptive role = Control`.
+2. Mark the induction block as `Adaptive role = Set` and upload exactly two variants in this order:
+   - Variant A: matches Direction A response (for example large-left or first-louder).
+   - Variant B: matches Direction B response (for example large-right or second-louder).
+3. Set the Direction A, Equal, and Direction B keys (default 1 / 2 / 3) and threshold (default .70).
+4. Mark the final equal block as `Adaptive role = Critical` if you want generic Fixed-Set missing-rate validity in the session summary.
+5. For extinction, choose `Stopping rule = Consecutive response`, response key `2`, count `10`, and set the block maximum trials to `40`.
 
-`assets/config.js` ships with `DEMO_MODE: true`. For live Supabase use, fill in the project URL and publishable key, then set `DEMO_MODE: false`.
+Do not put an Instruction or Break between Set and Critical if your protocol requires immediate transition.
 
-Do not put a Supabase secret/service-role key in browser code.
+## Supabase setup
+
+Edit `assets/config.js`:
+
+```js
+window.COG_CONFIG = {
+  SUPABASE_URL: "YOUR_PROJECT_URL",
+  SUPABASE_PUBLISHABLE_KEY: "YOUR_PUBLISHABLE_KEY",
+  DEMO_MODE: false,
+  BUILD: "7.0.0-final-universal-builder"
+};
+```
+
+Never place a secret/service-role key in browser code.
+
+Run `supabase/schema.sql` in the Supabase SQL editor, create an Auth user manually, then add that user's UUID to `public.admin_users`.
+
+The `stimuli` Storage bucket is public-read and admin-write under the supplied schema.
+
+## Deployment
+
+Upload the contents of this folder to the root of the `CogExperiments` GitHub repository and publish with GitHub Pages. v7.0 query-string cache busting is already included in the HTML files.
+
+## Test checklist before collecting real data
+
+- Confirm screen calibration with a physical card on each visual device class.
+- Confirm calibrated 40/60/80 mm circles with a ruler on screen.
+- Confirm fixation stays visible during visual ISI and disappears entirely when Fixation = None.
+- Confirm Sequential order is A → B → A → B.
+- Confirm Random works.
+- Confirm Pseudorandom is balanced and contains no run longer than 2 when feasible.
+- Confirm a second/third keypress on one trial does not replace the first response and appears only in extra-keypress metadata.
+- Confirm a no-response trial exports `Missing = TRUE` with blank response and RT.
+- Confirm `Until next stimulus` accepts a response during ISI and labels `Response_During = isi`.
+- Confirm generic adaptive Set selects one variant and keeps it fixed for all Set trials.
+- Confirm Critical stopping rule stops at 10 consecutive equal responses.
+- Confirm built-in circle Set → Critical has no transition screen.
+- Confirm Excel has Participants, Trial_Data, and Experiment_Settings.
+- Repeat tests in Demo Mode and again after Supabase is connected.

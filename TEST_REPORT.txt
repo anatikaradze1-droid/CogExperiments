@@ -1,0 +1,35 @@
+CogExperiments Final v7 automated audit
+
+PASS — Build identifier v7
+PASS — Fresh demo storage key
+PASS — Built-in circles 40/60/80
+PASS — Circle fixation 3mm
+PASS — Circle control 15 / set 15 / critical 40
+PASS — Circle critical stop 10 equal
+PASS — Circle 5-min break
+PASS — Natural asymmetry threshold .70
+PASS — Sequential order option
+PASS — Random order option
+PASS — Pseudorandom order option
+PASS — Pseudorandom implementation
+PASS — Participant-stable seed
+PASS — Adaptive Control/Set/Critical UI
+PASS — Adaptive threshold rule
+PASS — Adaptive fixed variant throughout Set
+PASS — Generic consecutive stop UI
+PASS — Generic consecutive stop runtime
+PASS — First response locked
+PASS — Extra keypress metadata
+PASS — Explicit missing response
+PASS — Missing percent export
+PASS — No fixation fallback during ISI
+PASS — Fixation persists during ISI if enabled
+PASS — ISI response classification
+PASS — Fixed Set Set→Critical validation runtime
+PASS — Fixed Set missing >20% invalid
+PASS — Excel 3 sheets
+PASS — No public register text
+PASS — Cache bust v7 admin
+PASS — Cache bust v7 runner
+
+Total: 31/31 checks passed.

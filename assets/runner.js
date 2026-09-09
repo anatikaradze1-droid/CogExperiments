@@ -10,6 +10,8 @@
   let controlResponses = [], setSide = '', criticalEndedByStreak = false;
   let completedFixedStages = new Set(), calibrationViewport = null;
   let resizeBound = false;
+  const blockPlans = new Map();
+  const adaptiveState = { controlResponses: [], asymmetry: 'none', setVariant: null };
 
   async function boot(){
     const slug = new URLSearchParams(location.search).get('exp');
@@ -20,7 +22,6 @@
     show(`<h2>${esc(exp.name)}</h2><div class="field"><label>Participant code</label><input id="pc" autocomplete="off"></div><button id="start" class="btn primary">დაწყება</button>`);
     start.onclick = async () => {
       if(!pc.value.trim()) return;
-      // always refresh latest published version immediately before starting
       exp = await CogDB.experimentBySlug(slug);
       cfg = exp.config || {};
       session = await CogDB.createSession({
@@ -134,12 +135,72 @@
     await waitButton('resume');
   }
 
+  function seedFrom(text){
+    let h = 2166136261 >>> 0;
+    for(const ch of String(text)){ h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+    return h >>> 0;
+  }
+  function mulberry32(seed){ return () => { let t=seed+=0x6D2B79F5; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; }; }
+  function shuffle(a, rnd=Math.random){
+    a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;
+  }
+  function balancedPseudoIndices(nStim, nSlots, seed){
+    if(nStim<=1) return Array(nSlots).fill(0);
+    const rnd=mulberry32(seed);
+    const counts=Array(nStim).fill(Math.floor(nSlots/nStim));
+    for(let i=0;i<nSlots%nStim;i++) counts[i]++;
+    const base=[]; counts.forEach((c,idx)=>{for(let k=0;k<c;k++)base.push(idx)});
+    for(let attempt=0;attempt<300;attempt++){
+      const x=shuffle(base,rnd); let ok=true;
+      for(let i=2;i<x.length;i++) if(x[i]===x[i-1]&&x[i]===x[i-2]){ok=false;break;}
+      if(ok) return x;
+    }
+    const out=[], rem=counts.slice();
+    while(out.length<nSlots){
+      let opts=rem.map((c,i)=>({c,i})).filter(o=>o.c>0 && !(out.length>=2&&out.at(-1)===o.i&&out.at(-2)===o.i));
+      if(!opts.length) opts=rem.map((c,i)=>({c,i})).filter(o=>o.c>0);
+      opts.sort((a,b)=>b.c-a.c || rnd()-.5);
+      const pick=opts[0].i; out.push(pick); rem[pick]--;
+    }
+    return out;
+  }
+
+  function planForBlock(b){
+    if(blockPlans.has(b.id)) return blockPlans.get(b.id);
+    const nStim=(b.stimuli||[]).length, trials=Math.max(1,+b.trials||1), slots=b.presentation==='pair'?trials*2:trials;
+    let idx=[];
+    if(b.stimulus_order==='pseudorandom') idx=balancedPseudoIndices(nStim,slots,seedFrom(`${session.participant_code}|${exp.id}|${b.id||b.name}`));
+    else if(b.stimulus_order==='random') idx=Array.from({length:slots},()=>Math.floor(Math.random()*Math.max(1,nStim)));
+    else idx=Array.from({length:slots},(_,i)=>nStim?i%nStim:0);
+    blockPlans.set(b.id,{indices:idx}); return blockPlans.get(b.id);
+  }
+
+  function adaptiveDirectionKeys(b){
+    const r=cfg.responses||[];
+    return {
+      a:b.adaptive_direction_a_key || r[0]?.key || '1',
+      equal:b.adaptive_equal_key || r[1]?.key || '2',
+      b:b.adaptive_direction_b_key || r[2]?.key || '3'
+    };
+  }
+  function determineGenericSetVariant(b){
+    const keys=adaptiveDirectionKeys(b), bad=adaptiveState.controlResponses.filter(k=>k===keys.a||k===keys.b);
+    const a=bad.filter(k=>k===keys.a).length, bb=bad.filter(k=>k===keys.b).length, th=+b.adaptive_threshold||.70;
+    if(bad.length && a/bad.length>th){ adaptiveState.asymmetry='A'; return 0; }
+    if(bad.length && bb/bad.length>th){ adaptiveState.asymmetry='B'; return 1; }
+    adaptiveState.asymmetry='none';
+    return seedFrom(`${session.participant_code}|${exp.id}|adaptive-set`) % 2;
+  }
+
   async function genericBlock(b){
     if(b.show_instructions && b.instructions) await instruction({title:b.name,text:b.instructions,button_text:'დაწყება'});
+    if(b.adaptive_role==='control') adaptiveState.controlResponses=[];
+    if(b.adaptive_role==='set') adaptiveState.setVariant=determineGenericSetVariant(b);
     let streak = 0;
     for(let i=1; i<=Math.max(1,+b.trials||1); i++){
       await ensureCalibration();
       const r = await genericTrial(b,i);
+      if(b.adaptive_role==='control') adaptiveState.controlResponses.push(r.response_key);
       if(b.stop_rule?.type==='consecutive_response'){
         streak = r.response_key===b.stop_rule.key ? streak+1 : 0;
         if(streak>=+b.stop_rule.count) break;
@@ -150,11 +211,13 @@
   function chooseStimuli(b,i){
     const a = b.stimuli || [];
     if(!a.length) return [];
-    if(b.presentation==='pair'){
-      if(b.stimulus_order==='random') return [a[Math.floor(Math.random()*a.length)],a[Math.floor(Math.random()*a.length)]];
-      return [a[((i-1)*2)%a.length], a[((i-1)*2+1)%a.length]];
+    if(b.adaptive_role==='set' && a.length>=2){
+      const chosen=a[adaptiveState.setVariant===1?1:0];
+      return b.presentation==='pair'?[chosen,chosen]:[chosen];
     }
-    return [b.stimulus_order==='random' ? a[Math.floor(Math.random()*a.length)] : a[(i-1)%a.length]];
+    const plan=planForBlock(b), offset=b.presentation==='pair'?(i-1)*2:(i-1);
+    if(b.presentation==='pair') return [a[plan.indices[offset]%a.length],a[plan.indices[offset+1]%a.length]];
+    return [a[plan.indices[offset]%a.length]];
   }
 
   function intendedCanvasMm(s){
@@ -224,8 +287,7 @@
       const gap = (+b.pair_gap_mm||15)*(pxPerMm||96/25.4);
       return `<div class="uploaded-pair" style="gap:${gap}px"><div>${assetHTML(ss[0])}</div><div>${fix}</div><div>${assetHTML(ss[1])}</div></div>`;
     }
-    // single/scene image is centered; fixation is overlaid at exact screen center
-    return `<div class="scene-wrap">${assetHTML(ss[0])}<div class="scene-fixation">${fix}</div></div>`;
+    return `<div class="scene-wrap">${assetHTML(ss[0])}${fix?`<div class="scene-fixation">${fix}</div>`:''}</div>`;
   }
 
   async function genericTrial(b,i){
@@ -246,6 +308,10 @@
       fixation_html:fixationHTML(b),
       metadata:{
         presentation:b.presentation||'single',
+        stimulus_order:b.stimulus_order||'sequential',
+        adaptive_role:b.adaptive_role||'none',
+        adaptive_asymmetry:adaptiveState.asymmetry,
+        adaptive_set_variant:adaptiveState.setVariant,
         stimuli:ss.map(s=>({name:s?.name,scale_mode:s?.scale_mode||'canvas',width_mm:s?.width_mm,height_mm:s?.height_mm,reference_box:s?.reference_box,reference_width_mm:s?.reference_width_mm,reference_height_mm:s?.reference_height_mm})),
         fixation:{mode:b.fixation?.mode||'red_dot',size_mm:+b.fixation?.size_mm||4,name:b.fixation?.asset?.name||null},
         px_per_mm:pxPerMm
@@ -283,18 +349,18 @@
     const f=cfg.fixed_set||{}, bad=controlResponses.filter(k=>k==='1'||k==='3'), l=bad.filter(k=>k==='1').length, r=bad.filter(k=>k==='3').length;
     if(bad.length&&l/bad.length>f.natural_asymmetry_threshold) return 'left';
     if(bad.length&&r/bad.length>f.natural_asymmetry_threshold) return 'right';
-    let h=0; for(const ch of String(session.participant_code)) h=(h*31+ch.charCodeAt(0))>>>0;
-    return h%2?'right':'left';
+    return seedFrom(`${session.participant_code}|${exp.id}|fixed-set`)%2?'right':'left';
   }
 
   async function circleTrial(name,i,lmm,rmm,save,metadata){
     await ensureCalibration();
-    const p=pxPerMm||96/25.4, g=(cfg.fixed_set?.pair_gap_mm||15)*p, fix=Math.max(3,(cfg.fixed_set?.fixation_mm||4)*p);
-    app.innerHTML=`<section class="experiment-screen fixedset-screen"><div id="stage" class="stimulus-stage"><div class="uploaded-pair" style="gap:${g}px"><div class="circle-stim" style="width:${lmm*p}px;height:${lmm*p}px"></div><div class="fixation" style="width:${fix}px;height:${fix}px"></div><div class="circle-stim" style="width:${rmm*p}px;height:${rmm*p}px"></div></div></div><div class="response-bar">${buttons()}</div></section>`;
+    const p=pxPerMm||96/25.4, g=(cfg.fixed_set?.pair_gap_mm||15)*p, fix=Math.max(3,(cfg.fixed_set?.fixation_mm||3)*p);
+    const fixHtml=`<div class="fixation" style="width:${fix}px;height:${fix}px"></div>`;
+    app.innerHTML=`<section class="experiment-screen fixedset-screen"><div id="stage" class="stimulus-stage"><div class="uploaded-pair" style="gap:${g}px"><div class="circle-stim" style="width:${lmm*p}px;height:${lmm*p}px"></div><div>${fixHtml}</div><div class="circle-stim" style="width:${rmm*p}px;height:${rmm*p}px"></div></div></div><div class="response-bar">${buttons()}</div></section>`;
     return captureTrial({
       block_name:name,block_trial:i,stimulus_name:`circle_pair_${lmm}mm_${rmm}mm`,stimulus_type:'generated/circles',
       exposure_ms:+cfg.fixed_set.exposure_ms,isi_ms:+cfg.fixed_set.isi_ms,response_window:'until_next_stimulus',save,
-      fixation_html:`<div class="fixation" style="width:${fix}px;height:${fix}px"></div>`,
+      fixation_html:fixHtml,
       metadata:{...metadata,left_mm:lmm,right_mm:rmm,px_per_mm:pxPerMm}
     });
   }
@@ -302,11 +368,17 @@
   function captureTrial(s){
     const onset=performance.now(), valid=new Set((cfg.responses||[]).map(r=>r.key));
     let key='', rt=null, open=true;
+    const extra=[];
     return new Promise(resolve=>{
-      const take=k=>{ if(open&&!key&&valid.has(k)){ key=k; rt=performance.now()-onset; } };
-      const kh=e=>{ if(valid.has(e.key)){ e.preventDefault(); take(e.key); } };
+      const take=(k,source='keyboard')=>{
+        if(!open || !valid.has(k)) return;
+        const now=performance.now()-onset;
+        if(!key){ key=k; rt=now; }
+        else extra.push({key:k,rt_ms:+now.toFixed(2),source});
+      };
+      const kh=e=>{ if(valid.has(e.key)){ e.preventDefault(); take(e.key,'keyboard'); } };
       addEventListener('keydown',kh,{passive:false});
-      document.querySelectorAll('[data-k]').forEach(b=>b.onpointerdown=()=>take(b.dataset.k));
+      document.querySelectorAll('[data-k]').forEach(b=>b.onpointerdown=()=>take(b.dataset.k,'button'));
       const exposure=Math.max(0,+s.exposure_ms||0), isi=Math.max(0,+s.isi_ms||0);
       let windowMs;
       if(s.response_window==='exposure_only') windowMs=exposure;
@@ -316,18 +388,19 @@
 
       setTimeout(()=>{
         const stage=document.getElementById('stage');
-        if(stage) stage.innerHTML=`<div class="isi-fixation">${s.fixation_html||'<div class="fixation"></div>'}</div>`;
+        if(stage) stage.innerHTML=s.fixation_html?`<div class="isi-fixation">${s.fixation_html}</div>`:'';
         document.querySelectorAll('[data-media]').forEach(m=>m.pause?.());
         if(s.response_window==='exposure_only') open=false;
       }, exposure);
 
       setTimeout(async()=>{
         open=false; removeEventListener('keydown',kh); globalTrial++;
+        const missing=!key;
         const row={
           experiment_id:exp.id,experiment_version:exp.version,session_id:session.id,participant_code:session.participant_code,
           block_name:s.block_name,global_trial:globalTrial,block_trial:s.block_trial,stimulus_name:s.stimulus_name,stimulus_type:s.stimulus_type,
-          response_key:key,response_label:(cfg.responses||[]).find(r=>r.key===key)?.label||'',rt_ms:rt==null?null:+rt.toFixed(2),missing:!key,
-          metadata:{...(s.metadata||{}),response_window:s.response_window,response_window_ms:windowMs,response_during:rt==null?'missing':(rt<=exposure?'exposure':'isi')}
+          response_key:key,response_label:(cfg.responses||[]).find(r=>r.key===key)?.label||'',rt_ms:rt==null?null:+rt.toFixed(2),missing,
+          metadata:{...(s.metadata||{}),response_window:s.response_window,response_window_ms:windowMs,response_during:rt==null?'missing':(rt<=exposure?'exposure':'isi'),extra_keypress_count:extra.length,extra_keypresses:extra}
         };
         trialRows.push(row); if(s.save) await CogDB.insertTrial(row); resolve(row);
       }, trialEndMs);
@@ -335,17 +408,30 @@
   }
 
   function buildSummary(){
-    if(cfg.template!=='uznadze_fixed_set') return {validity_status:'valid',calibration_px_per_mm:pxPerMm};
-    const bad=controlResponses.filter(k=>k==='1'||k==='3'), l=bad.filter(k=>k==='1').length, r=bad.filter(k=>k==='3').length;
-    let asym='none';
-    if(bad.length&&l/bad.length>(cfg.fixed_set?.natural_asymmetry_threshold||.7)) asym='left';
-    if(bad.length&&r/bad.length>(cfg.fixed_set?.natural_asymmetry_threshold||.7)) asym='right';
-    const c=trialRows.filter(x=>x.block_name==='Control'), k=trialRows.filter(x=>x.block_name==='Critical');
+    if(cfg.template==='uznadze_fixed_set'){
+      const bad=controlResponses.filter(k=>k==='1'||k==='3'), l=bad.filter(k=>k==='1').length, r=bad.filter(k=>k==='3').length;
+      let asym='none';
+      if(bad.length&&l/bad.length>(cfg.fixed_set?.natural_asymmetry_threshold||.7)) asym='left';
+      if(bad.length&&r/bad.length>(cfg.fixed_set?.natural_asymmetry_threshold||.7)) asym='right';
+      const c=trialRows.filter(x=>x.block_name==='Control'), k=trialRows.filter(x=>x.block_name==='Critical');
+      const cm=c.length?c.filter(x=>x.missing).length/c.length:0, km=k.length?k.filter(x=>x.missing).length/k.length:0;
+      return {
+        validity_status:cm>.2||km>.2?'invalid_missing_gt_20pct':'valid',set_side:setSide,natural_asymmetry:asym,
+        control_missing_rate:cm,critical_missing_rate:km,critical_contrast_count:k.filter(x=>x.response_key===(setSide==='left'?'3':'1')).length,
+        extinguished:criticalEndedByStreak,critical_trials:k.length,calibration_px_per_mm:pxPerMm
+      };
+    }
+    const blocks=cfg.elements?.filter(e=>e.type==='block')||[];
+    const control=blocks.find(b=>b.adaptive_role==='control'), critical=blocks.find(b=>b.adaptive_role==='critical');
+    const c=control?trialRows.filter(x=>x.block_name===control.name):[], k=critical?trialRows.filter(x=>x.block_name===critical.name):[];
     const cm=c.length?c.filter(x=>x.missing).length/c.length:0, km=k.length?k.filter(x=>x.missing).length/k.length:0;
     return {
-      validity_status:cm>.2||km>.2?'invalid_missing_gt_20pct':'valid',set_side:setSide,natural_asymmetry:asym,
-      control_missing_rate:cm,critical_missing_rate:km,critical_contrast_count:k.filter(x=>x.response_key===(setSide==='left'?'3':'1')).length,
-      extinguished:criticalEndedByStreak,critical_trials:k.length,calibration_px_per_mm:pxPerMm
+      validity_status:(control&&cm>.2)||(critical&&km>.2)?'invalid_missing_gt_20pct':'valid',
+      natural_asymmetry:adaptiveState.asymmetry,
+      set_variant:adaptiveState.setVariant==null?'':(adaptiveState.setVariant===0?'A':'B'),
+      control_missing_rate:control?cm:null,
+      critical_missing_rate:critical?km:null,
+      calibration_px_per_mm:pxPerMm
     };
   }
 
