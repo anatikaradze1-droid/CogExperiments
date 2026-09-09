@@ -582,8 +582,7 @@
       ) % 2
     );
   }
-
-  async function genericBlock(b) {
+    async function genericBlock(b) {
     if (
       b.show_instructions &&
       b.instructions
@@ -599,8 +598,7 @@
       b.adaptive_role ===
       'control'
     ) {
-      adaptiveState.controlResponses =
-        [];
+      adaptiveState.controlResponses = [];
     }
 
     if (
@@ -764,52 +762,56 @@
         `;
       }).join('');
 
-app.innerHTML = `
-  <section class="experiment-screen">
+    app.innerHTML = `
+      <section class="experiment-screen">
 
-    <div
-      id="stage"
-      class="stimulus-stage"
-      style="position:relative;">
+        <div
+          id="stage"
+          class="stimulus-stage"
+          style="position:relative;">
 
-      ${stimulusHTML}
+          ${stimulusHTML}
 
-      ${
-        fixation
-          ? `
-            <div style="
-              position:absolute;
-              left:50%;
-              top:50%;
-              transform:translate(-50%, -50%);
-              z-index:100;
-              pointer-events:none;
-            ">
-              ${fixation}
-            </div>
-          `
-          : ''
-      }
+          ${
+            fixation
+              ? `
+                <div
+                  style="
+                    position:absolute;
+                    left:50%;
+                    top:50%;
+                    transform:translate(-50%,-50%);
+                    z-index:100;
+                    pointer-events:none;
+                    display:grid;
+                    place-items:center;
+                  ">
+                  ${fixation}
+                </div>
+              `
+              : ''
+          }
 
-    </div>
+        </div>
 
-    <div class="response-bar">
-      ${(cfg.responses || [])
-        .map(
-          r => `
-            <button
-              data-k="${esc(r.key)}">
-              ${esc(r.key)}
-              —
-              ${esc(r.label)}
-            </button>
-          `
-        )
-        .join('')}
-    </div>
+        <div class="response-bar">
+          ${(cfg.responses || [])
+            .map(
+              r => `
+                <button
+                  data-k="${esc(r.key)}">
+                  ${esc(r.key)}
+                  —
+                  ${esc(r.label)}
+                </button>
+              `
+            )
+            .join('')}
+        </div>
 
-  </section>
-`;
+      </section>
+    `;
+
     return captureTrial({
       block_name: b.name,
       block_trial: i,
