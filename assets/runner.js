@@ -764,41 +764,52 @@
         `;
       }).join('');
 
-    app.innerHTML = `
-      <section class="experiment-screen">
+app.innerHTML = `
+  <section class="experiment-screen">
 
-        <div
-          id="stage"
-          class="stimulus-stage">
+    <div
+      id="stage"
+      class="stimulus-stage"
+      style="position:relative;">
 
-          ${stimulusHTML}
+      ${stimulusHTML}
 
-          ${
-            !stimulusHTML
-              ? fixation
-              : ''
-          }
+      ${
+        fixation
+          ? `
+            <div style="
+              position:absolute;
+              left:50%;
+              top:50%;
+              transform:translate(-50%, -50%);
+              z-index:100;
+              pointer-events:none;
+            ">
+              ${fixation}
+            </div>
+          `
+          : ''
+      }
 
-        </div>
+    </div>
 
-        <div class="response-bar">
-          ${(cfg.responses || [])
-            .map(
-              r => `
-                <button
-                  data-k="${esc(r.key)}">
-                  ${esc(r.key)}
-                  —
-                  ${esc(r.label)}
-                </button>
-              `
-            )
-            .join('')}
-        </div>
+    <div class="response-bar">
+      ${(cfg.responses || [])
+        .map(
+          r => `
+            <button
+              data-k="${esc(r.key)}">
+              ${esc(r.key)}
+              —
+              ${esc(r.label)}
+            </button>
+          `
+        )
+        .join('')}
+    </div>
 
-      </section>
-    `;
-
+  </section>
+`;
     return captureTrial({
       block_name: b.name,
       block_trial: i,
