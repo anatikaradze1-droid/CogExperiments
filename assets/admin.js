@@ -152,6 +152,107 @@
   });
 
 
+  /*
+    =====================================================
+    PARTICIPANT INFORMATION
+    =====================================================
+  */
+
+
+  const participantQuestion = (
+    type = 'short_text',
+    label = ''
+  ) => ({
+    id: uid(),
+
+    type,
+
+    label,
+
+    required: false,
+
+    placeholder: '',
+
+    options:
+      (
+        type === 'single_choice' ||
+        type === 'multiple_choice' ||
+        type === 'dropdown'
+      )
+        ? [
+            'Option 1',
+            'Option 2'
+          ]
+        : []
+  });
+
+
+  const defaultParticipantInfo = () => ({
+    enabled: false,
+
+    title:
+      'მონაწილის ინფორმაცია',
+
+    introduction:
+      'გთხოვთ, შეავსოთ ქვემოთ მოცემული ინფორმაცია ექსპერიმენტის დაწყებამდე.',
+
+    questions: []
+  });
+
+
+  function normalizeParticipantInfo(
+    cfg = {}
+  ) {
+    const saved =
+      cfg.participant_info ||
+      {};
+
+
+    const base =
+      defaultParticipantInfo();
+
+
+    const questions =
+      Array.isArray(
+        saved.questions
+      )
+        ? saved.questions.map(
+            q => ({
+              id:
+                q.id || uid(),
+
+              type:
+                q.type ||
+                'short_text',
+
+              label:
+                q.label || '',
+
+              required:
+                q.required === true,
+
+              placeholder:
+                q.placeholder || '',
+
+              options:
+                Array.isArray(
+                  q.options
+                )
+                  ? q.options
+                  : []
+            })
+          )
+        : [];
+
+
+    return {
+      ...base,
+      ...saved,
+      questions
+    };
+  }
+
+
   function fixedSetPreset() {
     return {
       template:
@@ -203,6 +304,9 @@
         natural_asymmetry_threshold:
           0.70
       },
+
+      participant_info:
+        defaultParticipantInfo(),
 
       elements: [
         instruction(
@@ -505,6 +609,9 @@
           'სტანდარტული საბანკო/ID ბარათი'
       },
 
+      participant_info:
+        defaultParticipantInfo(),
+
       elements: [
         instruction(
           'ინსტრუქცია',
@@ -538,9 +645,7 @@
       ]
     };
   }
-
-
-  function auditoryPreset() {
+    function auditoryPreset() {
     const eq =
       builtAsset(
         '01_equal_equal.wav',
@@ -671,6 +776,9 @@
           'სტანდარტული საბანკო/ID ბარათი'
       },
 
+      participant_info:
+        defaultParticipantInfo(),
+
       elements: [
         instruction(
           'ინსტრუქცია',
@@ -738,6 +846,9 @@
         reference_width_mm:
           85.60
       },
+
+      participant_info:
+        defaultParticipantInfo(),
 
       elements: [
         instruction(),
@@ -810,6 +921,7 @@
       cfg?.preset_kind ||
       cfg?.template ||
       '';
+
 
     const consent_items = [
       'გავეცანი კვლევის შესახებ ინფორმაციას და მქონდა შესაძლებლობა გამეცნო მონაწილეობის პირობები.',
@@ -941,7 +1053,9 @@
       consent_items
     };
   }
-    /*
+
+
+  /*
     =====================================================
     ADMIN NAVIGATION / BROWSER HISTORY
     =====================================================
@@ -1091,14 +1205,21 @@
           true
         );
 
+
       if (!es.length) {
         const demoCfg =
           fixedSetPreset();
+
 
         demoCfg.study_info =
           defaultStudyInfo(
             demoCfg
           );
+
+
+        demoCfg.participant_info =
+          defaultParticipantInfo();
+
 
         await CogDB.saveExperiment({
           id: uid(),
@@ -1217,15 +1338,18 @@
         'authGo'
       );
 
+
     const em =
       document.getElementById(
         'em'
       );
 
+
     const pw =
       document.getElementById(
         'pw'
       );
+
 
     const err =
       document.getElementById(
@@ -1413,9 +1537,7 @@
       'experiments'
     );
   }
-
-
-  async function list() {
+    async function list() {
     const es =
       await CogDB.experiments(
         true
@@ -1483,7 +1605,6 @@
                     </td>
 
                     <td>
-
                       ${
                         e.status ===
                         'published'
@@ -1498,7 +1619,6 @@
                           `
                           : '—'
                       }
-
                     </td>
 
                     <td>
@@ -1534,17 +1654,15 @@
     `;
 
 
-    const newBtn =
-      document.getElementById(
+    document
+      .getElementById(
         'newBtn'
-      );
-
-
-    newBtn.onclick =
-      () =>
-        navigate(
-          'new'
-        );
+      )
+      .onclick =
+        () =>
+          navigate(
+            'new'
+          );
 
 
     document
@@ -1716,7 +1834,8 @@
     const old =
       id
         ? es.find(
-            x => x.id === id
+            x =>
+              x.id === id
           )
         : null;
 
@@ -1745,19 +1864,11 @@
       };
 
 
-    /*
-      Existing experiments may not yet have
-      study_info.
-
-      Merge defaults with saved values so the
-      new Study Information editor works for
-      old and new experiments.
-    */
-
     cfg.study_info = {
       ...defaultStudyInfo(
         cfg
       ),
+
       ...(
         cfg.study_info ||
         {}
@@ -1781,8 +1892,27 @@
     }
 
 
+    /*
+      Old experiments may not have
+      participant_info yet.
+    */
+
+    cfg.participant_info =
+      normalizeParticipantInfo(
+        cfg
+      );
+
+
     let studyInfo =
       cfg.study_info;
+
+
+    let participantInfo =
+      cfg.participant_info;
+
+
+    let participantQuestions =
+      participantInfo.questions;
 
 
     let responses =
@@ -1816,6 +1946,7 @@
           </p>
 
         </div>
+
 
         <span class="badge">
           ${
@@ -2285,6 +2416,94 @@
       </section>
 
 
+      <!-- =================================================
+           PARTICIPANT INFORMATION
+           ================================================= -->
+
+      <section class="card">
+
+        <div class="section-head">
+
+          <div>
+
+            <h3>
+              Participant Information
+            </h3>
+
+            <p class="muted">
+              შექმენი კითხვები, რომლებიც მონაწილემ
+              ექსპერიმენტის დაწყებამდე უნდა შეავსოს.
+            </p>
+
+          </div>
+
+
+          <button
+            id="addParticipantQuestion"
+            class="btn small">
+            + Add question
+          </button>
+
+        </div>
+
+
+        <label class="checkline">
+
+          <input
+            id="pi_enabled"
+            type="checkbox"
+            ${
+              participantInfo.enabled
+                ? 'checked'
+                : ''
+            }>
+
+          Collect participant information
+
+        </label>
+
+
+        <div class="grid two">
+
+          <div class="field">
+
+            <label>
+              Page title
+            </label>
+
+            <input
+              id="pi_title"
+              value="${esc(
+                participantInfo.title ||
+                ''
+              )}">
+
+          </div>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Introduction
+          </label>
+
+          <textarea
+            id="pi_intro">${esc(
+              participantInfo.introduction ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div id="participantQuestions">
+        </div>
+
+      </section>
+
+
       ${
         cfg.template ===
         'uznadze_fixed_set'
@@ -2364,25 +2583,30 @@
         'nm'
       );
 
+
     const sl =
       document.getElementById(
         'sl'
       );
+
 
     const ds =
       document.getElementById(
         'ds'
       );
 
+
     const cm =
       document.getElementById(
         'cm'
       );
 
+
     const st =
       document.getElementById(
         'st'
       );
+
 
     const cal_enabled =
       document.getElementById(
@@ -2395,79 +2619,124 @@
         'si_category'
       );
 
+
     const si_duration =
       document.getElementById(
         'si_duration'
       );
+
 
     const si_task =
       document.getElementById(
         'si_task'
       );
 
+
     const si_device =
       document.getElementById(
         'si_device'
       );
+
 
     const si_participation =
       document.getElementById(
         'si_participation'
       );
 
+
     const si_consent_version =
       document.getElementById(
         'si_consent_version'
       );
+
 
     const si_summary =
       document.getElementById(
         'si_summary'
       );
 
+
     const si_about =
       document.getElementById(
         'si_about'
       );
+
 
     const si_procedure =
       document.getElementById(
         'si_procedure'
       );
 
+
     const si_eligibility =
       document.getElementById(
         'si_eligibility'
       );
+
 
     const si_privacy =
       document.getElementById(
         'si_privacy'
       );
 
+
     const si_consent_text =
       document.getElementById(
         'si_consent_text'
       );
+
 
     const si_consent_1 =
       document.getElementById(
         'si_consent_1'
       );
 
+
     const si_consent_2 =
       document.getElementById(
         'si_consent_2'
       );
+
 
     const si_consent_3 =
       document.getElementById(
         'si_consent_3'
       );
 
+
     const si_consent_4 =
       document.getElementById(
         'si_consent_4'
+      );
+
+
+    const pi_enabled =
+      document.getElementById(
+        'pi_enabled'
+      );
+
+
+    const pi_title =
+      document.getElementById(
+        'pi_title'
+      );
+
+
+    const pi_intro =
+      document.getElementById(
+        'pi_intro'
+      );
+
+
+    const addParticipantQuestion =
+      document.getElementById(
+        'addParticipantQuestion'
+      );
+
+
+    const participantQuestionsBox =
+      document.getElementById(
+        'participantQuestions'
       );
 
 
@@ -2476,20 +2745,24 @@
         'addR'
       );
 
+
     const addI =
       document.getElementById(
         'addI'
       );
+
 
     const addB =
       document.getElementById(
         'addB'
       );
 
+
     const addBreak =
       document.getElementById(
         'addBreak'
       );
+
 
     const cancel =
       document.getElementById(
@@ -2565,9 +2838,614 @@
       };
 
 
+    addParticipantQuestion.onclick =
+      () => {
+        participantQuestions.push(
+          participantQuestion()
+        );
+
+        renderParticipantQuestions();
+      };
+
+
     cancel.onclick =
       () =>
         backToExperiments();
+
+
+    /*
+      =====================================================
+      PARTICIPANT QUESTION BUILDER
+      =====================================================
+    */
+
+
+    function questionUsesOptions(
+      type
+    ) {
+      return (
+        type ===
+          'single_choice' ||
+        type ===
+          'multiple_choice' ||
+        type ===
+          'dropdown'
+      );
+    }
+
+
+    function questionTypeLabel(
+      type
+    ) {
+      if (
+        type ===
+        'number'
+      ) {
+        return 'Number';
+      }
+
+
+      if (
+        type ===
+        'single_choice'
+      ) {
+        return 'Single choice';
+      }
+
+
+      if (
+        type ===
+        'multiple_choice'
+      ) {
+        return 'Multiple choice';
+      }
+
+
+      if (
+        type ===
+        'dropdown'
+      ) {
+        return 'Dropdown';
+      }
+
+
+      return 'Short text';
+    }
+
+
+    function participantQuestionHTML(
+      q,
+      i
+    ) {
+      const usesOptions =
+        questionUsesOptions(
+          q.type
+        );
+
+
+      return `
+        <section
+          class="card element-card"
+          data-pq-card="${i}">
+
+          <div class="section-head">
+
+            <div>
+
+              <h3>
+                QUESTION ${i + 1}
+              </h3>
+
+              <p class="muted">
+                ${esc(
+                  questionTypeLabel(
+                    q.type
+                  )
+                )}
+              </p>
+
+            </div>
+
+
+            <div class="row">
+
+              <button
+                type="button"
+                class="btn small"
+                data-pq-up="${i}"
+                ${
+                  i === 0
+                    ? 'disabled'
+                    : ''
+                }>
+                ↑
+              </button>
+
+              <button
+                type="button"
+                class="btn small"
+                data-pq-down="${i}"
+                ${
+                  i ===
+                  participantQuestions.length -
+                    1
+                    ? 'disabled'
+                    : ''
+                }>
+                ↓
+              </button>
+
+              <button
+                type="button"
+                class="btn small danger"
+                data-pq-delete="${i}">
+                Remove
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <div class="grid two">
+
+            <div class="field">
+
+              <label>
+                Question type
+              </label>
+
+              <select
+                data-pq-type="${i}">
+
+                <option
+                  value="short_text"
+                  ${
+                    q.type ===
+                    'short_text'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Short text
+                </option>
+
+                <option
+                  value="number"
+                  ${
+                    q.type ===
+                    'number'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Number
+                </option>
+
+                <option
+                  value="single_choice"
+                  ${
+                    q.type ===
+                    'single_choice'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Single choice
+                </option>
+
+                <option
+                  value="multiple_choice"
+                  ${
+                    q.type ===
+                    'multiple_choice'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Multiple choice
+                </option>
+
+                <option
+                  value="dropdown"
+                  ${
+                    q.type ===
+                    'dropdown'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Dropdown
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Required
+              </label>
+
+              <label class="checkline">
+
+                <input
+                  type="checkbox"
+                  data-pq-required="${i}"
+                  ${
+                    q.required
+                      ? 'checked'
+                      : ''
+                  }>
+
+                Participant must answer
+
+              </label>
+
+            </div>
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Question
+            </label>
+
+            <input
+              data-pq-label="${i}"
+              value="${esc(
+                q.label ||
+                ''
+              )}"
+              placeholder="e.g. რამდენი წლის ხართ?">
+
+          </div>
+
+
+          ${
+            (
+              q.type ===
+                'short_text' ||
+              q.type ===
+                'number'
+            )
+              ? `
+                <div class="field">
+
+                  <label>
+                    Placeholder
+                  </label>
+
+                  <input
+                    data-pq-placeholder="${i}"
+                    value="${esc(
+                      q.placeholder ||
+                      ''
+                    )}"
+                    placeholder="Optional">
+
+                </div>
+              `
+              : ''
+          }
+
+
+          ${
+            usesOptions
+              ? `
+                <div class="field">
+
+                  <label>
+                    Answer options
+                  </label>
+
+                  <p class="muted">
+                    თითო ვარიანტი ცალკე ხაზზე.
+                  </p>
+
+                  <textarea
+                    data-pq-options="${i}"
+                    placeholder="Option 1&#10;Option 2">${esc(
+                      (
+                        q.options ||
+                        []
+                      ).join(
+                        '\n'
+                      )
+                    )}</textarea>
+
+                </div>
+              `
+              : ''
+          }
+
+        </section>
+      `;
+    }
+
+
+    function renderParticipantQuestions() {
+      if (
+        !participantQuestionsBox
+      ) {
+        return;
+      }
+
+
+      if (
+        !participantQuestions.length
+      ) {
+        participantQuestionsBox
+          .innerHTML = `
+            <div
+              class="muted-panel"
+              style="
+                margin-top:16px;
+                padding:16px;
+              ">
+
+              <p class="muted">
+                ჯერ არცერთი კითხვა არ არის დამატებული.
+                დააჭირე “+ Add question”.
+              </p>
+
+            </div>
+          `;
+
+        return;
+      }
+
+
+      participantQuestionsBox
+        .innerHTML =
+        participantQuestions
+          .map(
+            participantQuestionHTML
+          )
+          .join('');
+
+
+      document
+        .querySelectorAll(
+          '[data-pq-type]'
+        )
+        .forEach(
+          input => {
+            input.onchange =
+              () => {
+                const i =
+                  +input.dataset
+                    .pqType;
+
+
+                const q =
+                  participantQuestions[
+                    i
+                  ];
+
+
+                q.type =
+                  input.value;
+
+
+                if (
+                  questionUsesOptions(
+                    q.type
+                  ) &&
+                  (
+                    !Array.isArray(
+                      q.options
+                    ) ||
+                    !q.options.length
+                  )
+                ) {
+                  q.options = [
+                    'Option 1',
+                    'Option 2'
+                  ];
+                }
+
+
+                if (
+                  !questionUsesOptions(
+                    q.type
+                  )
+                ) {
+                  q.options = [];
+                }
+
+
+                renderParticipantQuestions();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-pq-label]'
+        )
+        .forEach(
+          input => {
+            input.oninput =
+              () => {
+                participantQuestions[
+                  +input.dataset
+                    .pqLabel
+                ].label =
+                  input.value;
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-pq-required]'
+        )
+        .forEach(
+          input => {
+            input.onchange =
+              () => {
+                participantQuestions[
+                  +input.dataset
+                    .pqRequired
+                ].required =
+                  input.checked;
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-pq-placeholder]'
+        )
+        .forEach(
+          input => {
+            input.oninput =
+              () => {
+                participantQuestions[
+                  +input.dataset
+                    .pqPlaceholder
+                ].placeholder =
+                  input.value;
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-pq-options]'
+        )
+        .forEach(
+          input => {
+            input.oninput =
+              () => {
+                participantQuestions[
+                  +input.dataset
+                    .pqOptions
+                ].options =
+                  input.value
+                    .split('\n')
+                    .map(
+                      x =>
+                        x.trim()
+                    )
+                    .filter(Boolean);
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-pq-delete]'
+        )
+        .forEach(
+          button => {
+            button.onclick =
+              () => {
+                participantQuestions
+                  .splice(
+                    +button.dataset
+                      .pqDelete,
+                    1
+                  );
+
+                renderParticipantQuestions();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-pq-up]'
+        )
+        .forEach(
+          button => {
+            button.onclick =
+              () => {
+                const i =
+                  +button.dataset
+                    .pqUp;
+
+
+                if (
+                  i <= 0
+                ) {
+                  return;
+                }
+
+
+                [
+                  participantQuestions[
+                    i - 1
+                  ],
+                  participantQuestions[
+                    i
+                  ]
+                ] = [
+                  participantQuestions[
+                    i
+                  ],
+                  participantQuestions[
+                    i - 1
+                  ]
+                ];
+
+
+                renderParticipantQuestions();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-pq-down]'
+        )
+        .forEach(
+          button => {
+            button.onclick =
+              () => {
+                const i =
+                  +button.dataset
+                    .pqDown;
+
+
+                if (
+                  i >=
+                  participantQuestions
+                    .length - 1
+                ) {
+                  return;
+                }
+
+
+                [
+                  participantQuestions[
+                    i
+                  ],
+                  participantQuestions[
+                    i + 1
+                  ]
+                ] = [
+                  participantQuestions[
+                    i + 1
+                  ],
+                  participantQuestions[
+                    i
+                  ]
+                ];
+
+
+                renderParticipantQuestions();
+              };
+          }
+        );
+    }
 
 
     function fixedHTML(
@@ -2803,6 +3681,7 @@
           'resp'
         );
 
+
       resp.innerHTML =
         responses
           .map(
@@ -2885,6 +3764,10 @@
           }
         );
     }
+
+
+    renderResponses();
+    renderParticipantQuestions();
         function stimHTML(
       s,
       i,
@@ -4191,7 +5074,6 @@
 
               </div>
 
-
               <label class="btn">
 
                 + Upload
@@ -4235,7 +5117,9 @@
         </section>
       `;
     }
-        function renderElements() {
+
+
+    function renderElements() {
       elements.forEach(
         e => {
           if (
@@ -4541,11 +5425,13 @@
                   return;
                 }
 
+
                 elements[i]
                   .fixation =
                     elements[i]
                       .fixation ||
                     {};
+
 
                 elements[i]
                   .fixation
@@ -4557,10 +5443,12 @@
                         )
                     );
 
+
                 elements[i]
                   .fixation
                   .mode =
                     'uploaded';
+
 
                 renderElements();
               };
@@ -4836,20 +5724,24 @@
           'fs_practice'
         );
 
+
       const fs_control =
         document.getElementById(
           'fs_control'
         );
+
 
       const fs_critical =
         document.getElementById(
           'fs_critical'
         );
 
+
       const fs_break =
         document.getElementById(
           'fs_break'
         );
+
 
       const fs_exposure =
         document.getElementById(
@@ -4926,6 +5818,7 @@
             STUDY INFORMATION
             =================================================
           */
+
 
           cfg.study_info = {
             category:
@@ -5013,7 +5906,114 @@
           };
 
 
+          /*
+            =================================================
+            PARTICIPANT INFORMATION
+            =================================================
+          */
+
+
+          const cleanedParticipantQuestions =
+            participantQuestions
+              .map(
+                q => ({
+                  id:
+                    q.id || uid(),
+
+                  type:
+                    q.type ||
+                    'short_text',
+
+                  label:
+                    (
+                      q.label ||
+                      ''
+                    ).trim(),
+
+                  required:
+                    q.required ===
+                    true,
+
+                  placeholder:
+                    (
+                      q.placeholder ||
+                      ''
+                    ).trim(),
+
+                  options:
+                    questionUsesOptions(
+                      q.type
+                    )
+                      ? (
+                          Array.isArray(
+                            q.options
+                          )
+                            ? q.options
+                            : []
+                        )
+                          .map(
+                            x =>
+                              String(x)
+                                .trim()
+                          )
+                          .filter(Boolean)
+                      : []
+                })
+              )
+              .filter(
+                q =>
+                  q.label
+              );
+
+
           if (
+            pi_enabled.checked &&
+            !cleanedParticipantQuestions
+              .length
+          ) {
+            throw Error(
+              'Participant Information ჩართულია, მაგრამ არცერთი კითხვა არ არის დამატებული.'
+            );
+          }
+
+
+          for (
+            const q of
+            cleanedParticipantQuestions
+          ) {
+            if (
+              questionUsesOptions(
+                q.type
+              ) &&
+              q.options.length <
+                2
+            ) {
+              throw Error(
+                `კითხვას “${q.label}” მინიმუმ 2 პასუხის ვარიანტი სჭირდება.`
+              );
+            }
+          }
+
+
+          cfg.participant_info = {
+            enabled:
+              pi_enabled.checked,
+
+            title:
+              pi_title
+                .value
+                .trim() ||
+              'მონაწილის ინფორმაცია',
+
+            introduction:
+              pi_intro
+                .value
+                .trim(),
+
+            questions:
+              cleanedParticipantQuestions
+          };
+                    if (
             cfg.template ===
             'uznadze_fixed_set'
           ) {
@@ -5025,55 +6025,66 @@
                 'fs_practice'
               );
 
+
             const fs_control =
               document.getElementById(
                 'fs_control'
               );
+
 
             const fs_set =
               document.getElementById(
                 'fs_set'
               );
 
+
             const fs_critical =
               document.getElementById(
                 'fs_critical'
               );
+
 
             const fs_stop =
               document.getElementById(
                 'fs_stop'
               );
 
+
             const fs_threshold =
               document.getElementById(
                 'fs_threshold'
               );
+
 
             const fs_exposure =
               document.getElementById(
                 'fs_exposure'
               );
 
+
             const fs_isi =
               document.getElementById(
                 'fs_isi'
               );
+
 
             const fs_break =
               document.getElementById(
                 'fs_break'
               );
 
+
             const fs_small =
               document.getElementById(
                 'fs_small'
               );
 
+
             const fs_equal =
               document.getElementById(
                 'fs_equal'
               );
+
 
             const fs_large =
               document.getElementById(
@@ -5191,9 +6202,12 @@
 
 
     renderResponses();
+    renderParticipantQuestions();
     renderElements();
   }
-    async function results() {
+
+
+  async function results() {
     const es =
       await CogDB.experiments(
         true
@@ -5253,15 +6267,18 @@
         'rex'
       );
 
+
     const load =
       document.getElementById(
         'load'
       );
 
+
     const xlsx =
       document.getElementById(
         'xlsx'
       );
+
 
     const rout =
       document.getElementById(
@@ -5280,6 +6297,7 @@
         await CogDB.results(
           rex.value
         );
+
 
       rout.innerHTML = `
         <p>
@@ -5352,6 +6370,7 @@
             []
           );
         }
+
 
         by.get(
           t.session_id
@@ -5512,6 +6531,33 @@
             s.summary ||
             {}
           );
+
+
+          /*
+            Future participant responses will be
+            added here after the public
+            Participant Information page and
+            session storage are connected.
+          */
+
+          if (
+            s.participant_data &&
+            typeof s.participant_data ===
+              'object'
+          ) {
+            Object.entries(
+              s.participant_data
+            ).forEach(
+              ([key, value]) => {
+                r[
+                  `Participant_${key}`
+                ] =
+                  Array.isArray(value)
+                    ? value.join(', ')
+                    : value;
+              }
+            );
+          }
 
 
           return r;
@@ -5708,6 +6754,126 @@
       }
 
 
+      /*
+        =====================================================
+        PARTICIPANT INFORMATION SETTINGS
+        =====================================================
+      */
+
+
+      if (
+        exp.config
+          ?.participant_info
+      ) {
+        const pi =
+          exp.config
+            .participant_info;
+
+
+        settings.push(
+          {
+            Setting:
+              'Participant information enabled',
+            Value:
+              pi.enabled
+                ? 'Yes'
+                : 'No'
+          },
+
+          {
+            Setting:
+              'Participant page title',
+            Value:
+              pi.title ||
+              ''
+          },
+
+          {
+            Setting:
+              'Participant page introduction',
+            Value:
+              pi.introduction ||
+              ''
+          },
+
+          {
+            Setting:
+              'Participant question count',
+            Value:
+              (
+                pi.questions ||
+                []
+              ).length
+          }
+        );
+
+
+        (
+          pi.questions ||
+          []
+        ).forEach(
+          (q, i) => {
+            settings.push(
+              {
+                Setting:
+                  `Participant question ${
+                    i + 1
+                  } ID`,
+                Value:
+                  q.id ||
+                  ''
+              },
+
+              {
+                Setting:
+                  `Participant question ${
+                    i + 1
+                  }`,
+                Value:
+                  q.label ||
+                  ''
+              },
+
+              {
+                Setting:
+                  `Participant question ${
+                    i + 1
+                  } type`,
+                Value:
+                  q.type ||
+                  ''
+              },
+
+              {
+                Setting:
+                  `Participant question ${
+                    i + 1
+                  } required`,
+                Value:
+                  q.required
+                    ? 'Yes'
+                    : 'No'
+              },
+
+              {
+                Setting:
+                  `Participant question ${
+                    i + 1
+                  } options`,
+                Value:
+                  (
+                    q.options ||
+                    []
+                  ).join(
+                    ' | '
+                  )
+              }
+            );
+          }
+        );
+      }
+
+
       (
         exp.config
           ?.responses ||
@@ -5814,8 +6980,10 @@
     XLSX.utils
       .book_append_sheet(
         wb,
+
         XLSX.utils
           .json_to_sheet(ps),
+
         'Participants'
       );
 
@@ -5823,8 +6991,10 @@
     XLSX.utils
       .book_append_sheet(
         wb,
+
         XLSX.utils
           .json_to_sheet(tr),
+
         'Trial_Data'
       );
 
@@ -5832,10 +7002,12 @@
     XLSX.utils
       .book_append_sheet(
         wb,
+
         XLSX.utils
           .json_to_sheet(
             settings
           ),
+
         'Experiment_Settings'
       );
 
