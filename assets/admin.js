@@ -801,25 +801,150 @@
       slug: ''
     };
   }
+
+
+  function defaultStudyInfo(
+    cfg = {}
+  ) {
+    const kind =
+      cfg?.preset_kind ||
+      cfg?.template ||
+      '';
+
+    const consent_items = [
+      'გავეცანი კვლევის შესახებ ინფორმაციას და მქონდა შესაძლებლობა გამეცნო მონაწილეობის პირობები.',
+      'მესმის, რომ კვლევაში მონაწილეობა ნებაყოფლობითია.',
+      'ვეთანხმები ჩემი ექსპერიმენტული მონაცემების კვლევითი მიზნებისთვის გამოყენებას.',
+      'ვადასტურებ, რომ მსურს ამ კვლევაში მონაწილეობა.'
+    ];
+
+
+    if (
+      kind ===
+      'auditory_fixed_set'
+    ) {
+      return {
+        category:
+          'Auditory Perception',
+
+        duration_minutes:
+          13,
+
+        task:
+          'Auditory task',
+
+        device:
+          'Computer',
+
+        participation:
+          'Anonymous',
+
+        summary: '',
+        about: '',
+        procedure: '',
+        eligibility: '',
+        privacy: '',
+        consent_text: '',
+        consent_version: 1,
+        consent_items
+      };
+    }
+
+
+    if (
+      kind ===
+      'vertical_fixed_set'
+    ) {
+      return {
+        category:
+          'Visual Perception',
+
+        duration_minutes:
+          12,
+
+        task:
+          'Visual perception task',
+
+        device:
+          'Desktop / Laptop',
+
+        participation:
+          'Anonymous',
+
+        summary: '',
+        about: '',
+        procedure: '',
+        eligibility: '',
+        privacy: '',
+        consent_text: '',
+        consent_version: 1,
+        consent_items
+      };
+    }
+
+
+    if (
+      kind ===
+      'uznadze_fixed_set'
+    ) {
+      return {
+        category:
+          'Perception · Fixed Set',
+
+        duration_minutes:
+          12,
+
+        task:
+          'Visual perception task',
+
+        device:
+          'Desktop / Laptop',
+
+        participation:
+          'Anonymous',
+
+        summary: '',
+        about: '',
+        procedure: '',
+        eligibility: '',
+        privacy: '',
+        consent_text: '',
+        consent_version: 1,
+        consent_items
+      };
+    }
+
+
+    return {
+      category:
+        'Cognitive Experiment',
+
+      duration_minutes:
+        '',
+
+      task:
+        'Cognitive task',
+
+      device:
+        'Computer',
+
+      participation:
+        'Anonymous',
+
+      summary: '',
+      about: '',
+      procedure: '',
+      eligibility: '',
+      privacy: '',
+      consent_text: '',
+      consent_version: 1,
+      consent_items
+    };
+  }
     /*
     =====================================================
     ADMIN NAVIGATION / BROWSER HISTORY
     =====================================================
-
-    Desired behavior:
-
-    Main page
-      ↓
-    Admin / Experiments
-      ↓
-    Edit experiment
-      ↓ browser Back
-    Admin / Experiments
-      ↓ browser Back
-    Previous page / Main
-
-    The public URL can remain /admin.
-    Different Admin views are stored in history.state.
   */
 
 
@@ -902,15 +1027,6 @@
 
 
   async function backToExperiments() {
-    /*
-      Edit is normally opened directly
-      from Experiments.
-
-      In that case history.back() returns
-      to the existing Experiments entry,
-      rather than creating another entry.
-    */
-
     if (
       currentAdminView() ===
       'edit'
@@ -918,11 +1034,6 @@
       history.back();
       return;
     }
-
-    /*
-      For Create/Builder views we return
-      to Experiments without leaving /admin.
-    */
 
     await replaceRoute(
       'experiments'
@@ -933,15 +1044,6 @@
   window.addEventListener(
     'popstate',
     event => {
-      /*
-        If the previous history entry belongs
-        to Admin, redraw that Admin view.
-
-        If it does NOT belong to Admin,
-        the browser is naturally leaving
-        this page and we do not interfere.
-      */
-
       if (
         isAdminState(
           event.state
@@ -990,6 +1092,14 @@
         );
 
       if (!es.length) {
+        const demoCfg =
+          fixedSetPreset();
+
+        demoCfg.study_info =
+          defaultStudyInfo(
+            demoCfg
+          );
+
         await CogDB.saveExperiment({
           id: uid(),
 
@@ -1008,7 +1118,7 @@
           version: 1,
 
           config:
-            fixedSetPreset(),
+            demoCfg,
 
           created_at:
             new Date()
@@ -1032,19 +1142,6 @@
 
     shell();
 
-
-    /*
-      First visit to /admin:
-
-      Convert the existing browser history
-      entry into the Experiments state.
-
-      IMPORTANT:
-      replaceState is used here, not pushState.
-
-      Therefore the page visited BEFORE /admin
-      remains immediately behind it.
-    */
 
     if (
       !isAdminState(
@@ -1312,11 +1409,6 @@
     }
 
 
-    /*
-      Unknown/invalid Admin state:
-      safely fall back to Experiments.
-    */
-
     return replaceRoute(
       'experiments'
     );
@@ -1362,7 +1454,7 @@
             <tr>
               <th>Name</th>
               <th>Status</th>
-              <th>Participant link</th>
+              <th>Study page</th>
               <th></th>
             </tr>
           </thead>
@@ -1397,7 +1489,7 @@
                         'published'
                           ? `
                             <a
-                              href="run.html?exp=${encodeURIComponent(
+                              href="study.html?exp=${encodeURIComponent(
                                 e.slug
                               )}"
                               target="_blank">
@@ -1653,6 +1745,46 @@
       };
 
 
+    /*
+      Existing experiments may not yet have
+      study_info.
+
+      Merge defaults with saved values so the
+      new Study Information editor works for
+      old and new experiments.
+    */
+
+    cfg.study_info = {
+      ...defaultStudyInfo(
+        cfg
+      ),
+      ...(
+        cfg.study_info ||
+        {}
+      )
+    };
+
+
+    if (
+      !Array.isArray(
+        cfg.study_info
+          .consent_items
+      ) ||
+      !cfg.study_info
+        .consent_items.length
+    ) {
+      cfg.study_info
+        .consent_items =
+        defaultStudyInfo(
+          cfg
+        ).consent_items;
+    }
+
+
+    let studyInfo =
+      cfg.study_info;
+
+
     let responses =
       cfg.responses ||
       defaultResponses();
@@ -1774,7 +1906,15 @@
 
             <select id="st">
 
-              <option value="draft">
+              <option
+                value="draft"
+                ${
+                  !old ||
+                  old?.status ===
+                    'draft'
+                    ? 'selected'
+                    : ''
+                }>
                 Draft
               </option>
 
@@ -1846,6 +1986,303 @@
         </section>
 
       </div>
+
+
+      <!-- =================================================
+           STUDY INFORMATION
+           ================================================= -->
+
+      <section class="card">
+
+        <div class="section-head">
+
+          <div>
+
+            <h3>
+              Study Information
+            </h3>
+
+            <p class="muted">
+              ინფორმაცია, რომელიც გამოჩნდება
+              Study Details და Consent გვერდებზე.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="grid two">
+
+          <div class="field">
+
+            <label>
+              Category
+            </label>
+
+            <input
+              id="si_category"
+              value="${esc(
+                studyInfo.category ||
+                ''
+              )}"
+              placeholder="e.g. Visual Perception">
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Duration (minutes)
+            </label>
+
+            <input
+              id="si_duration"
+              type="number"
+              min="1"
+              step="1"
+              value="${esc(
+                studyInfo.duration_minutes ??
+                ''
+              )}"
+              placeholder="e.g. 10">
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Task
+            </label>
+
+            <input
+              id="si_task"
+              value="${esc(
+                studyInfo.task ||
+                ''
+              )}"
+              placeholder="e.g. Visual perception task">
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Device
+            </label>
+
+            <input
+              id="si_device"
+              value="${esc(
+                studyInfo.device ||
+                ''
+              )}"
+              placeholder="e.g. Desktop / Laptop">
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Participation
+            </label>
+
+            <input
+              id="si_participation"
+              value="${esc(
+                studyInfo.participation ||
+                ''
+              )}"
+              placeholder="e.g. Anonymous">
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Consent version
+            </label>
+
+            <input
+              id="si_consent_version"
+              type="number"
+              min="1"
+              step="1"
+              value="${esc(
+                studyInfo.consent_version ??
+                1
+              )}">
+
+          </div>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Summary
+          </label>
+
+          <textarea
+            id="si_summary"
+            placeholder="მოკლე აღწერა, რომელიც გამოჩნდება კვლევის სათაურის ქვეშ.">${esc(
+              studyInfo.summary ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            About this study
+          </label>
+
+          <textarea
+            id="si_about"
+            placeholder="კვლევის მიზანი და ზოგადი აღწერა.">${esc(
+              studyInfo.about ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Procedure / What will participants do?
+          </label>
+
+          <textarea
+            id="si_procedure"
+            placeholder="რას გააკეთებს მონაწილე ექსპერიმენტის დროს?">${esc(
+              studyInfo.procedure ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Eligibility
+          </label>
+
+          <textarea
+            id="si_eligibility"
+            placeholder="ვინ შეიძლება მიიღოს მონაწილეობა?">${esc(
+              studyInfo.eligibility ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Privacy / Data handling
+          </label>
+
+          <textarea
+            id="si_privacy"
+            placeholder="რა მონაცემები გროვდება და როგორ გამოიყენება?">${esc(
+              studyInfo.privacy ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Informed consent text
+          </label>
+
+          <textarea
+            id="si_consent_text"
+            placeholder="ინფორმირებული თანხმობის ძირითადი ტექსტი.">${esc(
+              studyInfo.consent_text ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Consent checkbox 1
+          </label>
+
+          <textarea
+            id="si_consent_1">${esc(
+              studyInfo
+                .consent_items?.[0] ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Consent checkbox 2
+          </label>
+
+          <textarea
+            id="si_consent_2">${esc(
+              studyInfo
+                .consent_items?.[1] ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Consent checkbox 3
+          </label>
+
+          <textarea
+            id="si_consent_3">${esc(
+              studyInfo
+                .consent_items?.[2] ||
+              ''
+            )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Consent checkbox 4
+          </label>
+
+          <textarea
+            id="si_consent_4">${esc(
+              studyInfo
+                .consent_items?.[3] ||
+              ''
+            )}</textarea>
+
+        </div>
+
+      </section>
 
 
       ${
@@ -1952,6 +2389,88 @@
         'cal_enabled'
       );
 
+
+    const si_category =
+      document.getElementById(
+        'si_category'
+      );
+
+    const si_duration =
+      document.getElementById(
+        'si_duration'
+      );
+
+    const si_task =
+      document.getElementById(
+        'si_task'
+      );
+
+    const si_device =
+      document.getElementById(
+        'si_device'
+      );
+
+    const si_participation =
+      document.getElementById(
+        'si_participation'
+      );
+
+    const si_consent_version =
+      document.getElementById(
+        'si_consent_version'
+      );
+
+    const si_summary =
+      document.getElementById(
+        'si_summary'
+      );
+
+    const si_about =
+      document.getElementById(
+        'si_about'
+      );
+
+    const si_procedure =
+      document.getElementById(
+        'si_procedure'
+      );
+
+    const si_eligibility =
+      document.getElementById(
+        'si_eligibility'
+      );
+
+    const si_privacy =
+      document.getElementById(
+        'si_privacy'
+      );
+
+    const si_consent_text =
+      document.getElementById(
+        'si_consent_text'
+      );
+
+    const si_consent_1 =
+      document.getElementById(
+        'si_consent_1'
+      );
+
+    const si_consent_2 =
+      document.getElementById(
+        'si_consent_2'
+      );
+
+    const si_consent_3 =
+      document.getElementById(
+        'si_consent_3'
+      );
+
+    const si_consent_4 =
+      document.getElementById(
+        'si_consent_4'
+      );
+
+
     const addR =
       document.getElementById(
         'addR'
@@ -1976,9 +2495,7 @@
       document.getElementById(
         'cancel'
       );
-
-
-    nm.oninput =
+        nm.oninput =
       () => {
         if (
           !old &&
@@ -2048,18 +2565,12 @@
       };
 
 
-    /*
-      IMPORTANT:
-
-      Cancel from Edit behaves the same way
-      as browser Back — it returns to
-      Experiments rather than leaving Admin.
-    */
-
     cancel.onclick =
       () =>
         backToExperiments();
-        function fixedHTML(
+
+
+    function fixedHTML(
       fs = {}
     ) {
       return `
@@ -2069,6 +2580,7 @@
           <h3>
             Fixed Set scientific settings
           </h3>
+
 
           <div class="inline">
 
@@ -2327,12 +2839,13 @@
         )
         .forEach(
           x => {
-            x.oninput = () => {
-              responses[
-                +x.dataset.rk
-              ].key =
-                x.value;
-            };
+            x.oninput =
+              () => {
+                responses[
+                  +x.dataset.rk
+                ].key =
+                  x.value;
+              };
           }
         );
 
@@ -2343,12 +2856,13 @@
         )
         .forEach(
           x => {
-            x.oninput = () => {
-              responses[
-                +x.dataset.rl
-              ].label =
-                x.value;
-            };
+            x.oninput =
+              () => {
+                responses[
+                  +x.dataset.rl
+                ].label =
+                  x.value;
+              };
           }
         );
 
@@ -2359,20 +2873,19 @@
         )
         .forEach(
           x => {
-            x.onclick = () => {
-              responses.splice(
-                +x.dataset.rd,
-                1
-              );
+            x.onclick =
+              () => {
+                responses.splice(
+                  +x.dataset.rd,
+                  1
+                );
 
-              renderResponses();
-            };
+                renderResponses();
+              };
           }
         );
     }
-
-
-    function stimHTML(
+        function stimHTML(
       s,
       i,
       j
@@ -3722,9 +4235,7 @@
         </section>
       `;
     }
-
-
-    function renderElements() {
+        function renderElements() {
       elements.forEach(
         e => {
           if (
@@ -4410,6 +4921,98 @@
           };
 
 
+          /*
+            =================================================
+            STUDY INFORMATION
+            =================================================
+          */
+
+          cfg.study_info = {
+            category:
+              si_category
+                .value
+                .trim(),
+
+            duration_minutes:
+              si_duration
+                .value ===
+                ''
+                  ? null
+                  : +si_duration
+                      .value,
+
+            task:
+              si_task
+                .value
+                .trim(),
+
+            device:
+              si_device
+                .value
+                .trim(),
+
+            participation:
+              si_participation
+                .value
+                .trim(),
+
+            summary:
+              si_summary
+                .value
+                .trim(),
+
+            about:
+              si_about
+                .value
+                .trim(),
+
+            procedure:
+              si_procedure
+                .value
+                .trim(),
+
+            eligibility:
+              si_eligibility
+                .value
+                .trim(),
+
+            privacy:
+              si_privacy
+                .value
+                .trim(),
+
+            consent_text:
+              si_consent_text
+                .value
+                .trim(),
+
+            consent_version:
+              Math.max(
+                1,
+                +si_consent_version
+                  .value || 1
+              ),
+
+            consent_items: [
+              si_consent_1
+                .value
+                .trim(),
+
+              si_consent_2
+                .value
+                .trim(),
+
+              si_consent_3
+                .value
+                .trim(),
+
+              si_consent_4
+                .value
+                .trim()
+            ]
+          };
+
+
           if (
             cfg.template ===
             'uznadze_fixed_set'
@@ -4576,16 +5179,6 @@
             });
 
 
-          /*
-            After Save:
-
-            Edit -> return to the previous
-            Experiments history state.
-
-            Create/Builder -> render
-            Experiments inside Admin.
-          */
-
           await backToExperiments();
         }
 
@@ -4600,9 +5193,7 @@
     renderResponses();
     renderElements();
   }
-
-
-  async function results() {
+    async function results() {
     const es =
       await CogDB.experiments(
         true
@@ -5022,18 +5613,21 @@
           Value:
             exp.name
         },
+
         {
           Setting:
             'Version',
           Value:
             exp.version
         },
+
         {
           Setting:
             'Template',
           Value:
             exp.config?.template
         },
+
         {
           Setting:
             'Calibration required',
@@ -5045,6 +5639,73 @@
                 : 'No'
         }
       );
+
+
+      if (
+        exp.config?.study_info
+      ) {
+        settings.push(
+          {
+            Setting:
+              'Study category',
+            Value:
+              exp.config
+                .study_info
+                .category ||
+              ''
+          },
+
+          {
+            Setting:
+              'Study duration minutes',
+            Value:
+              exp.config
+                .study_info
+                .duration_minutes ??
+              ''
+          },
+
+          {
+            Setting:
+              'Study task',
+            Value:
+              exp.config
+                .study_info
+                .task ||
+              ''
+          },
+
+          {
+            Setting:
+              'Study device',
+            Value:
+              exp.config
+                .study_info
+                .device ||
+              ''
+          },
+
+          {
+            Setting:
+              'Participation',
+            Value:
+              exp.config
+                .study_info
+                .participation ||
+              ''
+          },
+
+          {
+            Setting:
+              'Consent version',
+            Value:
+              exp.config
+                .study_info
+                .consent_version ??
+              1
+          }
+        );
+      }
 
 
       (
