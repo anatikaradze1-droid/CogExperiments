@@ -1,22 +1,1040 @@
 <!doctype html>
 <html lang="ka">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CogExperiments Admin</title>
-  <link rel="stylesheet" href="assets/app.css?v=7.1.0">
-</head>
-<body>
-<header class="topbar">
-  <div><b>CogExperiments</b> <span class="version">FINAL UNIVERSAL BUILDER v7.1</span></div>
-  <div class="top-actions"><span id="modeBadge" class="badge"></span><button id="logoutBtn" class="btn small hidden">გასვლა</button></div>
-</header>
-<main id="app" class="page"></main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="assets/config.js?v=7.1.0"></script>
-<script src="assets/db.js?v=7.1.0"></script>
-<script src="assets/admin.js?v=7.1.0"></script>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1">
+
+  <title>Participant Information | CogExperiments</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #faf9f6;
+      color: #1e1e1e;
+
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    .site-header {
+      width: 100%;
+      min-height: 72px;
+      padding: 0 6vw;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      background: rgba(250, 249, 246, .97);
+      border-bottom: 1px solid #e9e6df;
+    }
+
+    .brand {
+      color: #171717;
+      text-decoration: none;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -.4px;
+    }
+
+    .site-header nav {
+      display: flex;
+      gap: 28px;
+    }
+
+    .site-header nav a {
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .site-header nav a:hover {
+      color: #111;
+    }
+
+    .page {
+      width: 100%;
+      padding: 72px 20px 100px;
+    }
+
+    .shell {
+      width: min(760px, 100%);
+      margin: 0 auto;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 36px;
+      color: #666;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .eyebrow {
+      margin-bottom: 12px;
+      color: #777;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+
+      font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+      font-size: clamp(38px, 6vw, 58px);
+      line-height: 1.05;
+      font-weight: 400;
+      letter-spacing: -1.5px;
+    }
+
+    .intro {
+      max-width: 650px;
+      margin: 0 0 38px;
+
+      color: #666;
+      font-size: 16px;
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    .form-card {
+      padding: 34px;
+
+      background: #fff;
+      border: 1px solid #e7e3dc;
+      border-radius: 22px;
+
+      box-shadow:
+        0 12px 34px rgba(0, 0, 0, .035);
+    }
+
+    .study-name {
+      padding-bottom: 24px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid #ece8e1;
+    }
+
+    .study-label {
+      margin-bottom: 8px;
+      color: #888;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+    }
+
+    .study-name h2 {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 650;
+    }
+
+    .question {
+      margin-bottom: 28px;
+    }
+
+    .question-label {
+      display: block;
+      margin-bottom: 10px;
+
+      font-size: 15px;
+      line-height: 1.5;
+      font-weight: 600;
+      color: #2e2e2e;
+    }
+
+    .required {
+      color: #9d3b3b;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 13px 14px;
+
+      border: 1px solid #d9d5cd;
+      border-radius: 11px;
+
+      background: white;
+      color: #222;
+      font: inherit;
+      font-size: 15px;
+    }
+
+    .choice-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .choice {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+
+      padding: 13px 14px;
+
+      border: 1px solid #e2ded6;
+      border-radius: 11px;
+
+      background: #fcfbf8;
+      cursor: pointer;
+    }
+
+    .choice input {
+      width: 17px;
+      height: 17px;
+      margin-top: 2px;
+    }
+
+    .error {
+      display: none;
+      margin-top: 10px;
+
+      color: #9d3b3b;
+      font-size: 13px;
+    }
+
+    .question.invalid .error {
+      display: block;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+
+      margin-top: 36px;
+      padding-top: 28px;
+
+      border-top: 1px solid #ece8e1;
+    }
+
+    .cancel {
+      color: #666;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .continue {
+      border: 0;
+      border-radius: 999px;
+
+      padding: 14px 24px;
+
+      background: #202020;
+      color: white;
+
+      font-size: 14px;
+      font-weight: 600;
+
+      cursor: pointer;
+    }
+
+    .loading,
+    .page-error {
+      width: min(760px, 100%);
+      margin: 100px auto;
+      padding: 28px;
+
+      background: #fff;
+      border: 1px solid #e7e3dc;
+      border-radius: 16px;
+
+      line-height: 1.6;
+    }
+
+    @media (max-width: 650px) {
+
+      .site-header {
+        padding: 0 20px;
+      }
+
+      .site-header nav {
+        gap: 14px;
+      }
+
+      .page {
+        padding-top: 45px;
+      }
+
+      .form-card {
+        padding: 22px;
+      }
+
+      .actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+      }
+
+      .continue {
+        width: 100%;
+      }
+
+      .cancel {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+
+
+<body>
+
+  <header class="site-header">
+
+    <a
+      class="brand"
+      href="index.html">
+      CogExperiments
+    </a>
+
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="research.html">Research</a>
+    </nav>
+
+  </header>
+
+
+  <main id="participantApp">
+
+    <div class="loading">
+      იტვირთება...
+    </div>
+
+  </main>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="assets/config.js?v=1.0.7"></script>
+  <script src="assets/db.js?v=1.0.7"></script>
+
+
+  <script>
+    (() => {
+
+      const app =
+        document.getElementById(
+          'participantApp'
+        );
+
+      const esc = value =>
+        String(value ?? '').replace(
+          /[&<>"']/g,
+          c => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+          }[c])
+        );
+
+      const slug =
+        new URLSearchParams(
+          location.search
+        ).get('exp');
+
+
+      function questionHTML(
+        q,
+        i
+      ) {
+
+        const required =
+          q.required
+            ? '<span class="required">*</span>'
+            : '';
+
+        if (
+          q.type ===
+          'number'
+        ) {
+
+          return `
+            <div
+              class="question"
+              data-question="${i}">
+
+              <label
+                class="question-label"
+                for="q_${i}">
+
+                ${esc(q.label)}
+                ${required}
+
+              </label>
+
+              <input
+                id="q_${i}"
+                type="number"
+                data-q="${i}"
+                placeholder="${esc(
+                  q.placeholder ||
+                  ''
+                )}">
+
+              <div class="error">
+                გთხოვთ, შეავსოთ ეს ველი.
+              </div>
+
+            </div>
+          `;
+        }
+
+
+        if (
+          q.type ===
+          'single_choice'
+        ) {
+
+          return `
+            <div
+              class="question"
+              data-question="${i}">
+
+              <div
+                class="question-label">
+
+                ${esc(q.label)}
+                ${required}
+
+              </div>
+
+              <div class="choice-list">
+
+                ${(q.options || [])
+                  .map(
+                    option => `
+                      <label class="choice">
+
+                        <input
+                          type="radio"
+                          name="q_${i}"
+                          value="${esc(option)}"
+                          data-q="${i}">
+
+                        <span>
+                          ${esc(option)}
+                        </span>
+
+                      </label>
+                    `
+                  )
+                  .join('')}
+
+              </div>
+
+              <div class="error">
+                გთხოვთ, აირჩიოთ პასუხი.
+              </div>
+
+            </div>
+          `;
+        }
+
+
+        if (
+          q.type ===
+          'multiple_choice'
+        ) {
+
+          return `
+            <div
+              class="question"
+              data-question="${i}">
+
+              <div
+                class="question-label">
+
+                ${esc(q.label)}
+                ${required}
+
+              </div>
+
+              <div class="choice-list">
+
+                ${(q.options || [])
+                  .map(
+                    option => `
+                      <label class="choice">
+
+                        <input
+                          type="checkbox"
+                          value="${esc(option)}"
+                          data-q="${i}">
+
+                        <span>
+                          ${esc(option)}
+                        </span>
+
+                      </label>
+                    `
+                  )
+                  .join('')}
+
+              </div>
+
+              <div class="error">
+                გთხოვთ, აირჩიოთ მინიმუმ ერთი პასუხი.
+              </div>
+
+            </div>
+          `;
+        }
+
+
+        if (
+          q.type ===
+          'dropdown'
+        ) {
+
+          return `
+            <div
+              class="question"
+              data-question="${i}">
+
+              <label
+                class="question-label"
+                for="q_${i}">
+
+                ${esc(q.label)}
+                ${required}
+
+              </label>
+
+              <select
+                id="q_${i}"
+                data-q="${i}">
+
+                <option value="">
+                  აირჩიეთ
+                </option>
+
+                ${(q.options || [])
+                  .map(
+                    option => `
+                      <option
+                        value="${esc(option)}">
+
+                        ${esc(option)}
+
+                      </option>
+                    `
+                  )
+                  .join('')}
+
+              </select>
+
+              <div class="error">
+                გთხოვთ, აირჩიოთ პასუხი.
+              </div>
+
+            </div>
+          `;
+        }
+
+
+        return `
+          <div
+            class="question"
+            data-question="${i}">
+
+            <label
+              class="question-label"
+              for="q_${i}">
+
+              ${esc(q.label)}
+              ${required}
+
+            </label>
+
+            <input
+              id="q_${i}"
+              type="text"
+              data-q="${i}"
+              autocomplete="off"
+              placeholder="${esc(
+                q.placeholder ||
+                ''
+              )}">
+
+            <div class="error">
+              გთხოვთ, შეავსოთ ეს ველი.
+            </div>
+
+          </div>
+        `;
+      }
+
+
+      function getAnswer(
+        q,
+        i
+      ) {
+
+        if (
+          q.type ===
+          'multiple_choice'
+        ) {
+
+          return [
+            ...document
+              .querySelectorAll(
+                `[data-q="${i}"]:checked`
+              )
+          ].map(
+            x => x.value
+          );
+
+        }
+
+
+        if (
+          q.type ===
+          'single_choice'
+        ) {
+
+          return document
+            .querySelector(
+              `[data-q="${i}"]:checked`
+            )
+            ?.value || '';
+
+        }
+
+
+        return document
+          .querySelector(
+            `[data-q="${i}"]`
+          )
+          ?.value ?? '';
+
+      }
+
+
+      function validAnswer(
+        q,
+        answer
+      ) {
+
+        if (
+          !q.required
+        ) {
+          return true;
+        }
+
+
+        if (
+          Array.isArray(
+            answer
+          )
+        ) {
+
+          return (
+            answer.length > 0
+          );
+
+        }
+
+
+        return (
+          String(
+            answer ?? ''
+          ).trim() !== ''
+        );
+      }
+
+
+      function render(
+        exp
+      ) {
+
+        const participantInfo =
+          exp.config?.participant_info ||
+          {};
+
+
+        const questions =
+          Array.isArray(
+            participantInfo.questions
+          )
+            ? participantInfo.questions
+                .filter(
+                  q =>
+                    String(
+                      q?.label ||
+                      ''
+                    ).trim()
+                )
+            : [];
+
+
+        /*
+          თუ Participant Information
+          გამორთულია ან კითხვები არ არის,
+          პირდაპირ Runner-ზე გადავდივართ.
+        */
+
+        if (
+          participantInfo.enabled !== true ||
+          !questions.length
+        ) {
+
+          location.replace(
+            `run.html?exp=${encodeURIComponent(
+              exp.slug
+            )}&consent=1`
+          );
+
+          return;
+        }
+
+
+        document.title =
+          `${
+            participantInfo.title ||
+            'Participant Information'
+          } — ${exp.name}`;
+
+
+        app.innerHTML = `
+          <div class="page">
+
+            <div class="shell">
+
+              <a
+                class="back"
+                href="consent.html?exp=${encodeURIComponent(
+                  exp.slug
+                )}">
+
+                ← თანხმობის გვერდზე დაბრუნება
+
+              </a>
+
+
+              <div class="eyebrow">
+                PARTICIPANT INFORMATION
+              </div>
+
+
+              <h1>
+                ${esc(
+                  participantInfo.title ||
+                  'მონაწილის ინფორმაცია'
+                )}
+              </h1>
+
+
+              ${
+                participantInfo.introduction
+                  ? `
+                    <p class="intro">
+                      ${esc(
+                        participantInfo.introduction
+                      )}
+                    </p>
+                  `
+                  : ''
+              }
+
+
+              <section class="form-card">
+
+                <div class="study-name">
+
+                  <div class="study-label">
+                    STUDY
+                  </div>
+
+                  <h2>
+                    ${esc(exp.name)}
+                  </h2>
+
+                </div>
+
+
+                <form
+                  id="participantForm"
+                  novalidate>
+
+                  ${questions
+                    .map(
+                      questionHTML
+                    )
+                    .join('')}
+
+
+                  <div class="actions">
+
+                    <a
+                      class="cancel"
+                      href="research.html">
+
+                      კვლევის დატოვება
+
+                    </a>
+
+
+                    <button
+                      class="continue"
+                      type="submit">
+
+                      ექსპერიმენტზე გადასვლა →
+
+                    </button>
+
+                  </div>
+
+                </form>
+
+              </section>
+
+            </div>
+
+          </div>
+        `;
+
+
+        const form =
+          document.getElementById(
+            'participantForm'
+          );
+
+
+        form.onsubmit =
+          event => {
+
+            event.preventDefault();
+
+
+            const answers =
+              {};
+
+
+            let valid =
+              true;
+
+
+            questions.forEach(
+              (
+                q,
+                i
+              ) => {
+
+                const answer =
+                  getAnswer(
+                    q,
+                    i
+                  );
+
+
+                const box =
+                  document.querySelector(
+                    `[data-question="${i}"]`
+                  );
+
+
+                const questionValid =
+                  validAnswer(
+                    q,
+                    answer
+                  );
+
+
+                box?.classList.toggle(
+                  'invalid',
+                  !questionValid
+                );
+
+
+                if (
+                  !questionValid
+                ) {
+                  valid =
+                    false;
+                }
+
+
+                answers[
+                  q.id ||
+                  `question_${i + 1}`
+                ] = {
+                  question_id:
+                    q.id ||
+                    `question_${i + 1}`,
+
+                  label:
+                    q.label ||
+                    '',
+
+                  type:
+                    q.type ||
+                    'short_text',
+
+                  answer
+                };
+
+              }
+            );
+
+
+            if (
+              !valid
+            ) {
+
+              document
+                .querySelector(
+                  '.question.invalid'
+                )
+                ?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'center'
+                });
+
+              return;
+            }
+
+
+            sessionStorage.setItem(
+              `cogexperiments-participant-${exp.slug}`,
+
+              JSON.stringify({
+                experiment_id:
+                  exp.id,
+
+                experiment_version:
+                  exp.version,
+
+                experiment_slug:
+                  exp.slug,
+
+                submitted_at:
+                  new Date()
+                    .toISOString(),
+
+                answers
+              })
+            );
+
+
+            location.href =
+              `run.html?exp=${encodeURIComponent(
+                exp.slug
+              )}&consent=1`;
+
+          };
+      }
+
+
+      async function boot() {
+
+        if (!slug) {
+
+          app.innerHTML = `
+            <div class="page-error">
+              კვლევის ბმული არასწორია.
+            </div>
+          `;
+
+          return;
+        }
+
+
+        try {
+
+          if (
+            !window.CogDB
+          ) {
+
+            throw new Error(
+              'CogDB ვერ ჩაიტვირთა.'
+            );
+          }
+
+
+          const exp =
+            await CogDB.experimentBySlug(
+              slug
+            );
+
+
+          if (!exp) {
+
+            app.innerHTML = `
+              <div class="page-error">
+                კვლევა ვერ მოიძებნა.
+              </div>
+            `;
+
+            return;
+          }
+
+
+          render(
+            exp
+          );
+
+        }
+
+        catch (
+          error
+        ) {
+
+          console.error(
+            'Participant page error:',
+            error
+          );
+
+
+          app.innerHTML = `
+            <div class="page-error">
+
+              <b>
+                მონაწილის ინფორმაციის გვერდის
+                ჩატვირთვა ვერ მოხერხდა.
+              </b>
+
+              <br><br>
+
+              ${esc(
+                error?.message ||
+                error
+              )}
+
+            </div>
+          `;
+
+        }
+      }
+
+
+      boot();
+
+    })();
+  </script>
+
 </body>
+
 </html>
