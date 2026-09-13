@@ -10,9 +10,278 @@
 
   <title>Informed Consent | CogExperiments</title>
 
-  <link
-    rel="stylesheet"
-    href="assets/study.css?v=1.0.1">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #faf9f6;
+      color: #1e1e1e;
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    .site-header {
+      width: 100%;
+      min-height: 72px;
+      padding: 0 6vw;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      background: rgba(250, 249, 246, .96);
+      border-bottom: 1px solid #e9e6df;
+    }
+
+    .brand {
+      color: #171717;
+      text-decoration: none;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -.4px;
+    }
+
+    .site-header nav {
+      display: flex;
+      gap: 28px;
+    }
+
+    .site-header nav a {
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .site-header nav a:hover {
+      color: #111;
+    }
+
+    .study-page {
+      width: 100%;
+      padding: 72px 20px 100px;
+    }
+
+    .consent-card {
+      width: min(760px, 100%);
+      margin: 0 auto;
+    }
+
+    .study-back {
+      display: inline-block;
+      margin-bottom: 36px;
+
+      color: #666;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .study-back:hover {
+      color: #111;
+    }
+
+    .consent-header {
+      margin-bottom: 38px;
+    }
+
+    .study-eyebrow {
+      margin-bottom: 12px;
+
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #757575;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+
+      font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+      font-size: clamp(38px, 6vw, 58px);
+      line-height: 1.05;
+      font-weight: 400;
+      letter-spacing: -1.5px;
+    }
+
+    .consent-header p {
+      margin: 0;
+      max-width: 650px;
+
+      color: #666;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .consent-body {
+      background: #fff;
+      border: 1px solid #e7e3dc;
+      border-radius: 22px;
+      padding: 34px;
+      box-shadow:
+        0 12px 34px rgba(0, 0, 0, .035);
+    }
+
+    .consent-study {
+      padding-bottom: 24px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid #ece8e1;
+    }
+
+    .consent-study-label {
+      margin-bottom: 8px;
+
+      color: #888;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+    }
+
+    .consent-study h2 {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 650;
+    }
+
+    .consent-text {
+      white-space: pre-line;
+
+      margin-bottom: 30px;
+
+      font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+      font-size: 17px;
+      line-height: 1.8;
+      color: #333;
+    }
+
+    .consent-options {
+      display: grid;
+      gap: 12px;
+    }
+
+    .consent-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+
+      padding: 16px 18px;
+
+      border: 1px solid #e7e3dc;
+      border-radius: 13px;
+
+      cursor: pointer;
+      background: #fcfbf8;
+    }
+
+    .consent-option:hover {
+      border-color: #cfcac0;
+    }
+
+    .consent-option input {
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .consent-option span {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #444;
+    }
+
+    .consent-action {
+      margin-top: 32px;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .consent-cancel {
+      color: #666;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .consent-start {
+      border: 0;
+      border-radius: 999px;
+
+      padding: 14px 23px;
+
+      background: #202020;
+      color: white;
+
+      font-size: 14px;
+      font-weight: 600;
+
+      cursor: pointer;
+    }
+
+    .consent-start:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+    }
+
+    .study-error,
+    .loading {
+      width: min(760px, 100%);
+      margin: 100px auto;
+      padding: 28px;
+
+      background: white;
+      border: 1px solid #e7e3dc;
+      border-radius: 16px;
+
+      line-height: 1.6;
+    }
+
+    @media (max-width: 650px) {
+      .site-header {
+        padding: 0 20px;
+      }
+
+      .site-header nav {
+        gap: 14px;
+      }
+
+      .study-page {
+        padding-top: 45px;
+      }
+
+      .consent-body {
+        padding: 22px;
+      }
+
+      .consent-action {
+        align-items: stretch;
+        flex-direction: column-reverse;
+      }
+
+      .consent-start {
+        width: 100%;
+      }
+
+      .consent-cancel {
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 
 
@@ -43,34 +312,371 @@
   </header>
 
 
-  <main>
+  <main id="consentApp">
 
-    <section
-      id="consentPage"
-      class="study-page">
-
-      <div
-        class="study-shell"
-        id="consentRoot">
-
-        <p>
-          იტვირთება...
-        </p>
-
-      </div>
-
-    </section>
+    <div class="loading">
+      იტვირთება...
+    </div>
 
   </main>
 
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script src="assets/config.js?v=1.0.1"></script>
+  <script src="assets/config.js?v=1.0.3"></script>
 
-  <script src="assets/db.js?v=1.0.1"></script>
+  <script src="assets/db.js?v=1.0.3"></script>
 
-  <script src="assets/consent.js?v=1.0.1"></script>
+
+  <script>
+    (() => {
+
+      const app =
+        document.getElementById(
+          'consentApp'
+        );
+
+
+      const esc = value =>
+        String(value ?? '')
+          .replace(
+            /[&<>"']/g,
+            c => ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;'
+            }[c])
+          );
+
+
+      const slug =
+        new URLSearchParams(
+          location.search
+        ).get('exp');
+
+
+      const defaultConsent = () =>
+        `კვლევაში მონაწილეობა ნებაყოფლობითია.
+
+ექსპერიმენტის განმავლობაში შეგროვდება თქვენი პასუხები და კვლევის დიზაინიდან გამომდინარე შესაძლოა დაფიქსირდეს რეაქციის დროც.
+
+კვლევის მონაცემები გამოიყენება მხოლოდ კვლევითი მიზნებისთვის.
+
+თქვენ შეგიძლიათ ნებისმიერ დროს შეწყვიტოთ მონაწილეობა ექსპერიმენტის დასრულებამდე.`;
+
+
+      const defaultItems = [
+        'გავეცანი კვლევის შესახებ ინფორმაციას და მქონდა შესაძლებლობა გამეცნო მონაწილეობის პირობები.',
+
+        'მესმის, რომ კვლევაში მონაწილეობა ნებაყოფლობითია.',
+
+        'ვეთანხმები ჩემი ექსპერიმენტული მონაცემების კვლევითი მიზნებისთვის გამოყენებას.',
+
+        'ვადასტურებ, რომ მსურს ამ კვლევაში მონაწილეობა.'
+      ];
+
+
+      function render(exp) {
+
+        const info =
+          exp.config?.study_info ||
+          {};
+
+
+        const consentText =
+          info.consent_text ||
+          defaultConsent();
+
+
+        const items =
+          Array.isArray(
+            info.consent_items
+          ) &&
+          info.consent_items
+            .filter(Boolean)
+            .length
+
+            ? info.consent_items
+                .filter(Boolean)
+
+            : defaultItems;
+
+
+        document.title =
+          `Consent — ${exp.name}`;
+
+
+        app.innerHTML = `
+          <div class="study-page">
+
+            <div class="consent-card">
+
+              <a
+                class="study-back"
+                href="study.html?exp=${encodeURIComponent(
+                  exp.slug
+                )}">
+                ← კვლევის ინფორმაციაზე დაბრუნება
+              </a>
+
+
+              <header class="consent-header">
+
+                <div class="study-eyebrow">
+                  INFORMED CONSENT
+                </div>
+
+                <h1>
+                  ინფორმირებული თანხმობა
+                </h1>
+
+                <p>
+                  გთხოვთ, გაეცნოთ ქვემოთ მოცემულ ინფორმაციას
+                  და დაადასტუროთ თანხმობა კვლევაში მონაწილეობაზე.
+                </p>
+
+              </header>
+
+
+              <section class="consent-body">
+
+                <div class="consent-study">
+
+                  <div class="consent-study-label">
+                    STUDY
+                  </div>
+
+                  <h2>
+                    ${esc(exp.name)}
+                  </h2>
+
+                </div>
+
+
+                <div class="consent-text">
+                  ${esc(consentText)}
+                </div>
+
+
+                <div class="consent-options">
+
+                  ${items.map(
+                    (item, i) => `
+                      <label class="consent-option">
+
+                        <input
+                          type="checkbox"
+                          data-consent-check="${i}">
+
+                        <span>
+                          ${esc(item)}
+                        </span>
+
+                      </label>
+                    `
+                  ).join('')}
+
+                </div>
+
+
+                <div class="consent-action">
+
+                  <a
+                    class="consent-cancel"
+                    href="research.html">
+                    არ ვეთანხმები
+                  </a>
+
+
+                  <button
+                    id="startExperiment"
+                    class="consent-start"
+                    type="button"
+                    disabled>
+                    ექსპერიმენტის დაწყება →
+                  </button>
+
+                </div>
+
+              </section>
+
+            </div>
+
+          </div>
+        `;
+
+
+        const checks = [
+          ...document.querySelectorAll(
+            '[data-consent-check]'
+          )
+        ];
+
+
+        const start =
+          document.getElementById(
+            'startExperiment'
+          );
+
+
+        const refresh =
+          () => {
+
+            start.disabled =
+              !checks.every(
+                checkbox =>
+                  checkbox.checked
+              );
+
+          };
+
+
+        checks.forEach(
+          checkbox => {
+
+            checkbox.addEventListener(
+              'change',
+              refresh
+            );
+
+          }
+        );
+
+
+        start.onclick =
+          () => {
+
+            if (
+              start.disabled
+            ) {
+              return;
+            }
+
+
+            localStorage.setItem(
+              `cogexperiments-consent-${exp.slug}`,
+
+              JSON.stringify({
+                accepted: true,
+
+                accepted_at:
+                  new Date()
+                    .toISOString(),
+
+                version:
+                  info.consent_version ||
+                  1
+              })
+            );
+
+
+            location.href =
+              `run.html?exp=${encodeURIComponent(
+                exp.slug
+              )}&consent=1`;
+
+          };
+
+      }
+
+
+      async function boot() {
+
+        if (!slug) {
+
+          app.innerHTML = `
+            <div class="study-error">
+              კვლევის ბმული არასწორია.
+            </div>
+          `;
+
+          return;
+
+        }
+
+
+        try {
+
+          if (
+            !window.CogDB
+          ) {
+            throw new Error(
+              'CogDB ვერ ჩაიტვირთა.'
+            );
+          }
+
+
+          if (
+            typeof CogDB
+              .experimentBySlug !==
+            'function'
+          ) {
+            throw new Error(
+              'experimentBySlug ფუნქცია ვერ მოიძებნა.'
+            );
+          }
+
+
+          const exp =
+            await CogDB
+              .experimentBySlug(
+                slug
+              );
+
+
+          if (!exp) {
+
+            app.innerHTML = `
+              <div class="study-error">
+                კვლევა ვერ მოიძებნა.
+              </div>
+            `;
+
+            return;
+
+          }
+
+
+          render(exp);
+
+        }
+
+        catch (error) {
+
+          console.error(
+            'Consent page error:',
+            error
+          );
+
+
+          app.innerHTML = `
+            <div class="study-error">
+
+              <b>
+                გვერდის ჩატვირთვა ვერ მოხერხდა.
+              </b>
+
+              <br><br>
+
+              ${esc(
+                error?.message ||
+                error
+              )}
+
+            </div>
+          `;
+
+        }
+
+      }
+
+
+      boot();
+
+    })();
+  </script>
 
 </body>
 
