@@ -19,6 +19,7 @@
       margin: 0;
       background: #faf9f6;
       color: #1e1e1e;
+
       font-family:
         Inter,
         -apple-system,
@@ -127,6 +128,7 @@
       border: 1px solid #e7e3dc;
       border-radius: 22px;
       padding: 34px;
+
       box-shadow:
         0 12px 34px rgba(0, 0, 0, .035);
     }
@@ -252,6 +254,7 @@
     }
 
     @media (max-width: 650px) {
+
       .site-header {
         padding: 0 20px;
       }
@@ -280,6 +283,7 @@
       .consent-cancel {
         text-align: center;
       }
+
     }
   </style>
 </head>
@@ -296,6 +300,7 @@
     </a>
 
     <nav>
+
       <a href="index.html">
         Home
       </a>
@@ -307,6 +312,7 @@
       <a href="research.html">
         Research
       </a>
+
     </nav>
 
   </header>
@@ -323,9 +329,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script src="assets/config.js?v=1.0.3"></script>
+  <script src="assets/config.js?v=1.0.6"></script>
 
-  <script src="assets/db.js?v=1.0.3"></script>
+  <script src="assets/db.js?v=1.0.6"></script>
 
 
   <script>
@@ -369,11 +375,8 @@
 
       const defaultItems = [
         'გავეცანი კვლევის შესახებ ინფორმაციას და მქონდა შესაძლებლობა გამეცნო მონაწილეობის პირობები.',
-
         'მესმის, რომ კვლევაში მონაწილეობა ნებაყოფლობითია.',
-
         'ვეთანხმები ჩემი ექსპერიმენტული მონაცემების კვლევითი მიზნებისთვის გამოყენებას.',
-
         'ვადასტურებ, რომ მსურს ამ კვლევაში მონაწილეობა.'
       ];
 
@@ -382,6 +385,11 @@
 
         const info =
           exp.config?.study_info ||
+          {};
+
+
+        const participantInfo =
+          exp.config?.participant_info ||
           {};
 
 
@@ -418,7 +426,9 @@
                 href="study.html?exp=${encodeURIComponent(
                   exp.slug
                 )}">
+
                 ← კვლევის ინფორმაციაზე დაბრუნება
+
               </a>
 
 
@@ -428,9 +438,11 @@
                   INFORMED CONSENT
                 </div>
 
+
                 <h1>
                   ინფორმირებული თანხმობა
                 </h1>
+
 
                 <p>
                   გთხოვთ, გაეცნოთ ქვემოთ მოცემულ ინფორმაციას
@@ -447,6 +459,7 @@
                   <div class="consent-study-label">
                     STUDY
                   </div>
+
 
                   <h2>
                     ${esc(exp.name)}
@@ -486,7 +499,9 @@
                   <a
                     class="consent-cancel"
                     href="research.html">
+
                     არ ვეთანხმები
+
                   </a>
 
 
@@ -495,7 +510,9 @@
                     class="consent-start"
                     type="button"
                     disabled>
-                    ექსპერიმენტის დაწყება →
+
+                    გაგრძელება →
+
                   </button>
 
                 </div>
@@ -572,6 +589,48 @@
             );
 
 
+            const participantQuestions =
+              Array.isArray(
+                participantInfo.questions
+              )
+                ? participantInfo.questions
+                    .filter(
+                      q =>
+                        String(
+                          q?.label ||
+                          ''
+                        ).trim()
+                    )
+                : [];
+
+
+            /*
+              If Participant Information
+              is enabled and at least one
+              valid question exists,
+              go there first.
+            */
+
+            if (
+              participantInfo.enabled === true &&
+              participantQuestions.length > 0
+            ) {
+
+              location.href =
+                `participant.html?exp=${encodeURIComponent(
+                  exp.slug
+                )}`;
+
+              return;
+
+            }
+
+
+            /*
+              No participant questions:
+              start experiment directly.
+            */
+
             location.href =
               `run.html?exp=${encodeURIComponent(
                 exp.slug
@@ -602,9 +661,11 @@
           if (
             !window.CogDB
           ) {
+
             throw new Error(
               'CogDB ვერ ჩაიტვირთა.'
             );
+
           }
 
 
@@ -613,9 +674,11 @@
               .experimentBySlug !==
             'function'
           ) {
+
             throw new Error(
               'experimentBySlug ფუნქცია ვერ მოიძებნა.'
             );
+
           }
 
 
@@ -639,7 +702,9 @@
           }
 
 
-          render(exp);
+          render(
+            exp
+          );
 
         }
 
