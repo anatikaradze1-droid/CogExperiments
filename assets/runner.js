@@ -126,6 +126,26 @@
         cfg =
           exp.config || {};
 
+        const participantStored =
+          sessionStorage.getItem(
+            `cogexperiments-participant-${exp.slug}`
+          );
+
+        let participantData = {};
+
+        if (participantStored) {
+          try {
+            participantData =
+              JSON.parse(participantStored) || {};
+          }
+          catch (error) {
+            console.warn(
+              'Participant data could not be parsed:',
+              error
+            );
+          }
+        }
+
         session =
           await CogDB.createSession({
             experiment_id:
@@ -153,8 +173,15 @@
             user_agent:
               navigator.userAgent,
 
+            participant_data:
+              participantData,
+
             summary: {}
           });
+
+        sessionStorage.removeItem(
+          `cogexperiments-participant-${exp.slug}`
+        );
 
         if (
           cfg.calibration?.enabled
@@ -471,7 +498,7 @@
           el.button_text ||
           'გაგრძელება'
         )}
-      </button>
+              </button>
     `);
 
     await waitButton();
@@ -843,7 +870,9 @@
       ) % 2
     );
   }
-    async function genericBlock(b) {
+
+
+  async function genericBlock(b) {
     if (
       b.show_instructions &&
       b.instructions
@@ -971,8 +1000,7 @@
     ) {
       return '';
     }
-
-    if (
+        if (
       b.fixation?.mode ===
         'image' &&
       b.fixation?.url
@@ -1471,7 +1499,7 @@
         let i = 1;
         i <= n;
         i++
-      ) {
+              ) {
         await circleTrial(
           'Set / Induction',
           i,
@@ -1908,7 +1936,9 @@
         durations
     };
   }
-    async function captureTrial(s) {
+
+
+  async function captureTrial(s) {
     globalTrial++;
 
     const start =
@@ -1971,8 +2001,7 @@
       ) {
         return;
       }
-
-      const now =
+            const now =
         performance.now();
 
       const event = {
