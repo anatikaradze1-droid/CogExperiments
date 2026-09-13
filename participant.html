@@ -8,7 +8,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1">
 
-  <title>Informed Consent | CogExperiments</title>
+  <title>Participant Information | CogExperiments</title>
 
   <style>
     * {
@@ -37,7 +37,7 @@
       align-items: center;
       justify-content: space-between;
 
-      background: rgba(250, 249, 246, .96);
+      background: rgba(250, 249, 246, .97);
       border-bottom: 1px solid #e9e6df;
     }
 
@@ -64,17 +64,17 @@
       color: #111;
     }
 
-    .study-page {
+    .page {
       width: 100%;
       padding: 72px 20px 100px;
     }
 
-    .consent-card {
+    .shell {
       width: min(760px, 100%);
       margin: 0 auto;
     }
 
-    .study-back {
+    .back-link {
       display: inline-block;
       margin-bottom: 36px;
 
@@ -83,21 +83,17 @@
       font-size: 14px;
     }
 
-    .study-back:hover {
+    .back-link:hover {
       color: #111;
     }
 
-    .consent-header {
-      margin-bottom: 38px;
-    }
-
-    .study-eyebrow {
+    .eyebrow {
       margin-bottom: 12px;
 
+      color: #777;
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 1.5px;
-      color: #757575;
     }
 
     h1 {
@@ -114,32 +110,35 @@
       letter-spacing: -1.5px;
     }
 
-    .consent-header p {
-      margin: 0;
+    .intro {
       max-width: 650px;
+      margin: 0 0 38px;
 
       color: #666;
       font-size: 16px;
       line-height: 1.7;
+      white-space: pre-line;
     }
 
-    .consent-body {
+    .form-card {
+      padding: 34px;
+
       background: #fff;
       border: 1px solid #e7e3dc;
       border-radius: 22px;
-      padding: 34px;
 
       box-shadow:
         0 12px 34px rgba(0, 0, 0, .035);
     }
 
-    .consent-study {
+    .study-block {
       padding-bottom: 24px;
       margin-bottom: 28px;
+
       border-bottom: 1px solid #ece8e1;
     }
 
-    .consent-study-label {
+    .study-label {
       margin-bottom: 8px;
 
       color: #888;
@@ -148,86 +147,138 @@
       letter-spacing: 1.4px;
     }
 
-    .consent-study h2 {
+    .study-block h2 {
       margin: 0;
+
       font-size: 21px;
       font-weight: 650;
     }
 
-    .consent-text {
-      white-space: pre-line;
-
-      margin-bottom: 30px;
-
-      font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-      font-size: 17px;
-      line-height: 1.8;
-      color: #333;
+    .question {
+      margin-bottom: 28px;
     }
 
-    .consent-options {
+    .question-label {
+      display: block;
+      margin-bottom: 10px;
+
+      color: #2e2e2e;
+      font-size: 15px;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    .required {
+      margin-left: 3px;
+      color: #a33a3a;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 13px 14px;
+
+      border: 1px solid #d9d5cd;
+      border-radius: 11px;
+
+      background: #fff;
+      color: #222;
+
+      font: inherit;
+      font-size: 15px;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #9c978e;
+
+      box-shadow:
+        0 0 0 3px rgba(0, 0, 0, .04);
+    }
+
+    .choice-list {
       display: grid;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .consent-option {
+    .choice {
       display: flex;
       align-items: flex-start;
-      gap: 13px;
+      gap: 11px;
 
-      padding: 16px 18px;
+      padding: 13px 14px;
 
-      border: 1px solid #e7e3dc;
-      border-radius: 13px;
+      border: 1px solid #e2ded6;
+      border-radius: 11px;
 
-      cursor: pointer;
       background: #fcfbf8;
+      cursor: pointer;
     }
 
-    .consent-option:hover {
-      border-color: #cfcac0;
+    .choice:hover {
+      border-color: #cbc6bc;
     }
 
-    .consent-option input {
-      margin-top: 3px;
-      width: 18px;
-      height: 18px;
+    .choice input {
+      width: 17px;
+      height: 17px;
+      margin-top: 2px;
       flex: 0 0 auto;
     }
 
-    .consent-option span {
+    .choice span {
+      color: #333;
       font-size: 14px;
-      line-height: 1.6;
-      color: #444;
+      line-height: 1.5;
     }
 
-    .consent-action {
-      margin-top: 32px;
+    .error {
+      display: none;
+
+      margin-top: 9px;
+
+      color: #a33a3a;
+      font-size: 13px;
+    }
+
+    .question.invalid .error {
+      display: block;
+    }
+
+    .question.invalid input[type="text"],
+    .question.invalid input[type="number"],
+    .question.invalid select {
+      border-color: #c98282;
+    }
+
+    .actions {
+      margin-top: 36px;
+      padding-top: 28px;
 
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
+
+      border-top: 1px solid #ece8e1;
     }
 
-    .consent-cancel {
+    .leave-link {
       color: #666;
       text-decoration: none;
       font-size: 14px;
     }
 
-    .consent-start {
+    .continue-btn {
       border: 0;
       border-radius: 999px;
 
-      padding: 14px 23px;
+      padding: 14px 24px;
 
       background: #202020;
-      color: white;
+      color: #fff;
 
       font-size: 14px;
       font-weight: 600;
@@ -235,18 +286,17 @@
       cursor: pointer;
     }
 
-    .consent-start:disabled {
-      opacity: .35;
-      cursor: not-allowed;
+    .continue-btn:hover {
+      background: #000;
     }
 
-    .study-error,
-    .loading {
+    .loading,
+    .page-error {
       width: min(760px, 100%);
       margin: 100px auto;
       padding: 28px;
 
-      background: white;
+      background: #fff;
       border: 1px solid #e7e3dc;
       border-radius: 16px;
 
@@ -254,6 +304,7 @@
     }
 
     @media (max-width: 650px) {
+
       .site-header {
         padding: 0 20px;
       }
@@ -262,24 +313,24 @@
         gap: 14px;
       }
 
-      .study-page {
+      .page {
         padding-top: 45px;
       }
 
-      .consent-body {
+      .form-card {
         padding: 22px;
       }
 
-      .consent-action {
-        align-items: stretch;
+      .actions {
         flex-direction: column-reverse;
+        align-items: stretch;
       }
 
-      .consent-start {
+      .continue-btn {
         width: 100%;
       }
 
-      .consent-cancel {
+      .leave-link {
         text-align: center;
       }
     }
@@ -298,23 +349,15 @@
     </a>
 
     <nav>
-      <a href="index.html">
-        Home
-      </a>
-
-      <a href="about.html">
-        About
-      </a>
-
-      <a href="research.html">
-        Research
-      </a>
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="research.html">Research</a>
     </nav>
 
   </header>
 
 
-  <main id="consentApp">
+  <main id="participantApp">
 
     <div class="loading">
       იტვირთება...
@@ -325,9 +368,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script src="assets/config.js?v=1.0.5"></script>
-
-  <script src="assets/db.js?v=1.0.5"></script>
+  <script src="assets/config.js?v=1.0.8"></script>
+  <script src="assets/db.js?v=1.0.8"></script>
 
 
   <script>
@@ -335,22 +377,8 @@
 
       const app =
         document.getElementById(
-          'consentApp'
+          'participantApp'
         );
-
-
-      const esc = value =>
-        String(value ?? '')
-          .replace(
-            /[&<>"']/g,
-            c => ({
-              '&': '&amp;',
-              '<': '&lt;',
-              '>': '&gt;',
-              '"': '&quot;',
-              "'": '&#39;'
-            }[c])
-          );
 
 
       const slug =
@@ -359,96 +387,451 @@
         ).get('exp');
 
 
-      const defaultConsent = () =>
-        `კვლევაში მონაწილეობა ნებაყოფლობითია.
-
-ექსპერიმენტის განმავლობაში შეგროვდება თქვენი პასუხები და კვლევის დიზაინიდან გამომდინარე შესაძლოა დაფიქსირდეს რეაქციის დროც.
-
-კვლევის მონაცემები გამოიყენება მხოლოდ კვლევითი მიზნებისთვის.
-
-თქვენ შეგიძლიათ ნებისმიერ დროს შეწყვიტოთ მონაწილეობა ექსპერიმენტის დასრულებამდე.`;
-
-
-      const defaultItems = [
-        'გავეცანი კვლევის შესახებ ინფორმაციას და მქონდა შესაძლებლობა გამეცნო მონაწილეობის პირობები.',
-        'მესმის, რომ კვლევაში მონაწილეობა ნებაყოფლობითია.',
-        'ვეთანხმები ჩემი ექსპერიმენტული მონაცემების კვლევითი მიზნებისთვის გამოყენებას.',
-        'ვადასტურებ, რომ მსურს ამ კვლევაში მონაწილეობა.'
-      ];
+      const esc = value =>
+        String(value ?? '')
+          .replace(
+            /[&<>"']/g,
+            char => ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;'
+            }[char])
+          );
 
 
-      function render(exp) {
+      function renderQuestion(
+        question,
+        index
+      ) {
 
-        const info =
-          exp.config?.study_info ||
-          {};
+        const requiredMark =
+          question.required
+            ? '<span class="required">*</span>'
+            : '';
 
+
+        if (
+          question.type ===
+          'number'
+        ) {
+
+          return `
+            <div
+              class="question"
+              data-question-index="${index}">
+
+              <label
+                class="question-label"
+                for="question_${index}">
+
+                ${esc(question.label)}
+                ${requiredMark}
+
+              </label>
+
+              <input
+                id="question_${index}"
+                type="number"
+                data-question-input="${index}"
+                placeholder="${esc(
+                  question.placeholder ||
+                  ''
+                )}">
+
+              <div class="error">
+                გთხოვთ, შეავსოთ ეს ველი.
+              </div>
+
+            </div>
+          `;
+        }
+
+
+        if (
+          question.type ===
+          'single_choice'
+        ) {
+
+          const options =
+            Array.isArray(
+              question.options
+            )
+              ? question.options
+              : [];
+
+
+          return `
+            <div
+              class="question"
+              data-question-index="${index}">
+
+              <div class="question-label">
+
+                ${esc(question.label)}
+                ${requiredMark}
+
+              </div>
+
+              <div class="choice-list">
+
+                ${options
+                  .map(
+                    option => `
+                      <label class="choice">
+
+                        <input
+                          type="radio"
+                          name="question_${index}"
+                          value="${esc(option)}"
+                          data-question-input="${index}">
+
+                        <span>
+                          ${esc(option)}
+                        </span>
+
+                      </label>
+                    `
+                  )
+                  .join('')}
+
+              </div>
+
+              <div class="error">
+                გთხოვთ, აირჩიოთ პასუხი.
+              </div>
+
+            </div>
+          `;
+        }
+
+
+        if (
+          question.type ===
+          'multiple_choice'
+        ) {
+
+          const options =
+            Array.isArray(
+              question.options
+            )
+              ? question.options
+              : [];
+
+
+          return `
+            <div
+              class="question"
+              data-question-index="${index}">
+
+              <div class="question-label">
+
+                ${esc(question.label)}
+                ${requiredMark}
+
+              </div>
+
+              <div class="choice-list">
+
+                ${options
+                  .map(
+                    option => `
+                      <label class="choice">
+
+                        <input
+                          type="checkbox"
+                          value="${esc(option)}"
+                          data-question-input="${index}">
+
+                        <span>
+                          ${esc(option)}
+                        </span>
+
+                      </label>
+                    `
+                  )
+                  .join('')}
+
+              </div>
+
+              <div class="error">
+                გთხოვთ, აირჩიოთ მინიმუმ ერთი პასუხი.
+              </div>
+
+            </div>
+          `;
+        }
+
+
+        if (
+          question.type ===
+          'dropdown'
+        ) {
+
+          const options =
+            Array.isArray(
+              question.options
+            )
+              ? question.options
+              : [];
+
+
+          return `
+            <div
+              class="question"
+              data-question-index="${index}">
+
+              <label
+                class="question-label"
+                for="question_${index}">
+
+                ${esc(question.label)}
+                ${requiredMark}
+
+              </label>
+
+              <select
+                id="question_${index}"
+                data-question-input="${index}">
+
+                <option value="">
+                  აირჩიეთ
+                </option>
+
+                ${options
+                  .map(
+                    option => `
+                      <option
+                        value="${esc(option)}">
+
+                        ${esc(option)}
+
+                      </option>
+                    `
+                  )
+                  .join('')}
+
+              </select>
+
+              <div class="error">
+                გთხოვთ, აირჩიოთ პასუხი.
+              </div>
+
+            </div>
+          `;
+        }
+
+
+        return `
+          <div
+            class="question"
+            data-question-index="${index}">
+
+            <label
+              class="question-label"
+              for="question_${index}">
+
+              ${esc(question.label)}
+              ${requiredMark}
+
+            </label>
+
+            <input
+              id="question_${index}"
+              type="text"
+              autocomplete="off"
+              data-question-input="${index}"
+              placeholder="${esc(
+                question.placeholder ||
+                ''
+              )}">
+
+            <div class="error">
+              გთხოვთ, შეავსოთ ეს ველი.
+            </div>
+
+          </div>
+        `;
+      }
+
+
+      function readAnswer(
+        question,
+        index
+      ) {
+
+        if (
+          question.type ===
+          'multiple_choice'
+        ) {
+
+          return [
+            ...document.querySelectorAll(
+              `[data-question-input="${index}"]:checked`
+            )
+          ].map(
+            input =>
+              input.value
+          );
+
+        }
+
+
+        if (
+          question.type ===
+          'single_choice'
+        ) {
+
+          return (
+            document.querySelector(
+              `[data-question-input="${index}"]:checked`
+            )?.value ||
+            ''
+          );
+
+        }
+
+
+        return (
+          document.querySelector(
+            `[data-question-input="${index}"]`
+          )?.value ??
+          ''
+        );
+
+      }
+
+
+      function answerIsValid(
+        question,
+        answer
+      ) {
+
+        if (
+          question.required !== true
+        ) {
+          return true;
+        }
+
+
+        if (
+          Array.isArray(
+            answer
+          )
+        ) {
+
+          return (
+            answer.length >
+            0
+          );
+
+        }
+
+
+        return (
+          String(
+            answer ??
+            ''
+          ).trim() !== ''
+        );
+
+      }
+
+
+      function render(
+        exp
+      ) {
 
         const participantInfo =
           exp.config?.participant_info ||
           {};
 
 
-        const consentText =
-          info.consent_text ||
-          defaultConsent();
-
-
-        const items =
+        const questions =
           Array.isArray(
-            info.consent_items
-          ) &&
-          info.consent_items
-            .filter(Boolean)
-            .length
+            participantInfo.questions
+          )
+            ? participantInfo.questions
+                .filter(
+                  question =>
+                    String(
+                      question?.label ||
+                      ''
+                    ).trim()
+                )
+            : [];
 
-            ? info.consent_items
-                .filter(Boolean)
 
-            : defaultItems;
+        if (
+          participantInfo.enabled !== true ||
+          questions.length === 0
+        ) {
+
+          location.replace(
+            `run.html?exp=${encodeURIComponent(
+              exp.slug
+            )}&consent=1`
+          );
+
+          return;
+        }
 
 
         document.title =
-          `Consent — ${exp.name}`;
+          `${
+            participantInfo.title ||
+            'Participant Information'
+          } | CogExperiments`;
 
 
         app.innerHTML = `
-          <div class="study-page">
+          <div class="page">
 
-            <div class="consent-card">
+            <div class="shell">
 
               <a
-                class="study-back"
-                href="study.html?exp=${encodeURIComponent(
+                class="back-link"
+                href="consent.html?exp=${encodeURIComponent(
                   exp.slug
                 )}">
-                ← კვლევის ინფორმაციაზე დაბრუნება
+
+                ← თანხმობის გვერდზე დაბრუნება
+
               </a>
 
 
-              <header class="consent-header">
-
-                <div class="study-eyebrow">
-                  INFORMED CONSENT
-                </div>
-
-                <h1>
-                  ინფორმირებული თანხმობა
-                </h1>
-
-                <p>
-                  გთხოვთ, გაეცნოთ ქვემოთ მოცემულ ინფორმაციას
-                  და დაადასტუროთ თანხმობა კვლევაში მონაწილეობაზე.
-                </p>
-
-              </header>
+              <div class="eyebrow">
+                PARTICIPANT INFORMATION
+              </div>
 
 
-              <section class="consent-body">
+              <h1>
+                ${esc(
+                  participantInfo.title ||
+                  'მონაწილის ინფორმაცია'
+                )}
+              </h1>
 
-                <div class="consent-study">
 
-                  <div class="consent-study-label">
+              ${
+                participantInfo.introduction
+                  ? `
+                    <p class="intro">
+                      ${esc(
+                        participantInfo.introduction
+                      )}
+                    </p>
+                  `
+                  : ''
+              }
+
+
+              <section class="form-card">
+
+                <div class="study-block">
+
+                  <div class="study-label">
                     STUDY
                   </div>
 
@@ -459,50 +842,46 @@
                 </div>
 
 
-                <div class="consent-text">
-                  ${esc(consentText)}
-                </div>
+                <form
+                  id="participantForm"
+                  novalidate>
+
+                  ${questions
+                    .map(
+                      (
+                        question,
+                        index
+                      ) =>
+                        renderQuestion(
+                          question,
+                          index
+                        )
+                    )
+                    .join('')}
 
 
-                <div class="consent-options">
+                  <div class="actions">
 
-                  ${items.map(
-                    (item, i) => `
-                      <label class="consent-option">
+                    <a
+                      class="leave-link"
+                      href="research.html">
 
-                        <input
-                          type="checkbox"
-                          data-consent-check="${i}">
+                      კვლევის დატოვება
 
-                        <span>
-                          ${esc(item)}
-                        </span>
-
-                      </label>
-                    `
-                  ).join('')}
-
-                </div>
+                    </a>
 
 
-                <div class="consent-action">
+                    <button
+                      class="continue-btn"
+                      type="submit">
 
-                  <a
-                    class="consent-cancel"
-                    href="research.html">
-                    არ ვეთანხმები
-                  </a>
+                      ექსპერიმენტზე გადასვლა →
 
+                    </button>
 
-                  <button
-                    id="startExperiment"
-                    class="consent-start"
-                    type="button"
-                    disabled>
-                    გაგრძელება →
-                  </button>
+                  </div>
 
-                </div>
+                </form>
 
               </section>
 
@@ -512,98 +891,140 @@
         `;
 
 
-        const checks = [
-          ...document.querySelectorAll(
-            '[data-consent-check]'
-          )
-        ];
-
-
-        const start =
+        const form =
           document.getElementById(
-            'startExperiment'
+            'participantForm'
           );
 
 
-        const refresh =
-          () => {
+        form.addEventListener(
+          'submit',
+          event => {
 
-            start.disabled =
-              !checks.every(
-                checkbox =>
-                  checkbox.checked
-              );
-
-          };
+            event.preventDefault();
 
 
-        checks.forEach(
-          checkbox => {
+            const answers =
+              {};
 
-            checkbox.addEventListener(
-              'change',
-              refresh
+
+            let formIsValid =
+              true;
+
+
+            questions.forEach(
+              (
+                question,
+                index
+              ) => {
+
+                const answer =
+                  readAnswer(
+                    question,
+                    index
+                  );
+
+
+                const valid =
+                  answerIsValid(
+                    question,
+                    answer
+                  );
+
+
+                const questionBox =
+                  document.querySelector(
+                    `[data-question-index="${index}"]`
+                  );
+
+
+                questionBox
+                  ?.classList
+                  .toggle(
+                    'invalid',
+                    !valid
+                  );
+
+
+                if (
+                  !valid
+                ) {
+
+                  formIsValid =
+                    false;
+
+                }
+
+
+                const questionId =
+                  question.id ||
+                  `question_${index + 1}`;
+
+
+                answers[
+                  questionId
+                ] = {
+
+                  question_id:
+                    questionId,
+
+                  label:
+                    question.label ||
+                    '',
+
+                  type:
+                    question.type ||
+                    'short_text',
+
+                  answer
+                };
+
+              }
             );
 
-          }
-        );
-
-
-        start.onclick =
-          () => {
 
             if (
-              start.disabled
+              !formIsValid
             ) {
+
+              document
+                .querySelector(
+                  '.question.invalid'
+                )
+                ?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'center'
+                });
+
               return;
             }
 
 
-            localStorage.setItem(
-              `cogexperiments-consent-${exp.slug}`,
+            const participantData =
+              {
+                experiment_id:
+                  exp.id,
 
-              JSON.stringify({
-                accepted: true,
+                experiment_version:
+                  exp.version,
 
-                accepted_at:
+                experiment_slug:
+                  exp.slug,
+
+                submitted_at:
                   new Date()
                     .toISOString(),
 
-                version:
-                  info.consent_version ||
-                  1
-              })
-            );
+                answers
+              };
 
 
-            const participantQuestions =
-              Array.isArray(
-                participantInfo.questions
+            sessionStorage.setItem(
+              `cogexperiments-participant-${exp.slug}`,
+              JSON.stringify(
+                participantData
               )
-                ? participantInfo.questions
-                    .filter(
-                      q =>
-                        String(
-                          q?.label ||
-                          ''
-                        ).trim()
-                    )
-                : [];
-
-
-            if (
-              participantInfo.enabled === true &&
-              participantQuestions.length
-            ) {
-
-              location.href =
-                `participant.html?exp=${encodeURIComponent(
-                  exp.slug
-                )}`;
-
-              return;
-
-            }
+            );
 
 
             location.href =
@@ -611,23 +1032,25 @@
                 exp.slug
               )}&consent=1`;
 
-          };
+          }
+        );
 
       }
 
 
       async function boot() {
 
-        if (!slug) {
+        if (
+          !slug
+        ) {
 
           app.innerHTML = `
-            <div class="study-error">
+            <div class="page-error">
               კვლევის ბმული არასწორია.
             </div>
           `;
 
           return;
-
         }
 
 
@@ -636,9 +1059,24 @@
           if (
             !window.CogDB
           ) {
+
             throw new Error(
               'CogDB ვერ ჩაიტვირთა.'
             );
+
+          }
+
+
+          if (
+            typeof CogDB
+              .experimentBySlug !==
+            'function'
+          ) {
+
+            throw new Error(
+              'experimentBySlug ფუნქცია ვერ მოიძებნა.'
+            );
+
           }
 
 
@@ -649,36 +1087,41 @@
               );
 
 
-          if (!exp) {
+          if (
+            !exp
+          ) {
 
             app.innerHTML = `
-              <div class="study-error">
+              <div class="page-error">
                 კვლევა ვერ მოიძებნა.
               </div>
             `;
 
             return;
-
           }
 
 
-          render(exp);
+          render(
+            exp
+          );
 
         }
 
-        catch (error) {
+        catch (
+          error
+        ) {
 
           console.error(
-            'Consent page error:',
+            'Participant page error:',
             error
           );
 
 
           app.innerHTML = `
-            <div class="study-error">
+            <div class="page-error">
 
               <b>
-                გვერდის ჩატვირთვა ვერ მოხერხდა.
+                მონაწილის ინფორმაციის გვერდის ჩატვირთვა ვერ მოხერხდა.
               </b>
 
               <br><br>
@@ -692,7 +1135,6 @@
           `;
 
         }
-
       }
 
 
