@@ -1,133 +1,5230 @@
 (() => {
-const A=document.getElementById('app'),badge=document.getElementById('modeBadge'),logout=document.getElementById('logoutBtn');
-badge.textContent=CogDB.demo?'DEMO MODE':'LIVE / SUPABASE';
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const uid=()=>crypto.randomUUID(), slugify=s=>s.toLowerCase().trim().replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,''); let content;
-const imageMeta=a=>new Promise(res=>{if(!(a.type||'').startsWith('image/'))return res(a);const im=new Image();im.onload=()=>res({...a,natural_width:im.naturalWidth,natural_height:im.naturalHeight});im.onerror=()=>res(a);im.src=a.url;});
-const defaultResponses=()=>[{key:'1',label:'მარცხენა დიდია'},{key:'2',label:'ტოლია'},{key:'3',label:'მარჯვენა დიდია'}];
-const instruction=(title='ინსტრუქცია',text='',button_text='გაგრძელება')=>({id:uid(),type:'instruction',title,text,button_text});
-const breakEl=(minutes=0,title='შუალედი',text='')=>({id:uid(),type:'break',duration_ms:minutes*60000,title,text,button_text:'გაგრძელება'});
-const blankBlock=(name='Block 1')=>({id:uid(),type:'block',name,trials:10,exposure_ms:1000,isi_ms:1000,response_window:'until_next_stimulus',response_window_ms:2500,save:true,stimuli:[],stimulus_order:'sequential',presentation:'single',pair_gap_mm:15,fixation:{mode:'red_dot',size_mm:4,asset:null},instructions:'',show_instructions:false,stop_rule:null,adaptive_role:'none',adaptive_direction_a_key:'1',adaptive_equal_key:'2',adaptive_direction_b_key:'3',adaptive_threshold:.70});
-function fixedSetPreset(){return{template:'uznadze_fixed_set',responses:defaultResponses(),completion_message:'ექსპერიმენტი დასრულდა. გმადლობთ მონაწილეობისთვის.',calibration:{enabled:true,reference_width_mm:85.60,reference_label:'სტანდარტული საბანკო/ID ბარათი'},fixed_set:{practice_trials:3,control_trials:15,set_trials:15,critical_max_trials:40,critical_stop_key:'2',critical_stop_count:10,exposure_ms:1000,isi_ms:1500,response_window:'until_next_stimulus',small_mm:40,equal_mm:60,large_mm:80,fixation_mm:3,pair_gap_mm:15,break_ms:300000,natural_asymmetry_threshold:.70},elements:[instruction('ინსტრუქცია','ეკრანზე გამოჩნდება ფიგურები; ფიგურები შეიძლება იყოს ტოლი ან მათ შორის შეიძლება იყოს განსხვავება. თქვენი ამოცანაა შეადაროთ მათი ზომები ერთმანეთს, დააფიქსიროთ მცირე სხვაობაც კი და კლავიატურის შესაბამის ღილაკზე ხელის დაჭერით უპასუხოთ: თუ მარცხენაა დიდი, აჭერთ კლავიატურაზე „1“-ს; თუ ტოლია, აჭერთ „2“-ს; თუ მარჯვენაა დიდი, აჭერთ „3“-ს. ექსპერიმენტის მიმდინარეობისას უყურეთ წერტილს, რომელიც ეკრანის შუაშია მოცემული. მეორე წყვილის გამოჩენამდე უნდა მოასწროთ პირველის შეფასება და პასუხის გაცემა.'),instruction('სავარჯიშო ცდები','ახლა შესრულდება 3 სავარჯიშო ცდა.'),{id:uid(),type:'fixedset_stage',stage:'practice',name:'Practice'},instruction('სავარჯიშო დასრულებულია','სავარჯიშო ნაწილი დასრულებულია. როცა მზად იქნებით, დაიწყეთ ძირითადი ექსპერიმენტი.'),{id:uid(),type:'fixedset_stage',stage:'control',name:'Control'},{...breakEl(5,'5-წუთიანი შუალედი','გადაერთეთ სხვა აქტივობაზე და ნუ უყურებთ ექსპერიმენტულ სტიმულებს.'),role:'control_set_break'},{id:uid(),type:'fixedset_stage',stage:'set',name:'Set / Induction'},{id:uid(),type:'fixedset_stage',stage:'critical',name:'Critical'}]}}
-const builtAsset=(name,type,url,extra={})=>({name,type,url,...extra});
-const visualFix=()=>({mode:'red_dot',size_mm:3,asset:null});
-const noFix=()=>({mode:'none',size_mm:3,asset:null});
-const adaptiveBlock=(name,trials,stimuli,role='none',save=true,fixation=visualFix(),exposure_ms=1000,isi_ms=1500)=>({
-  id:uid(),type:'block',name,trials,exposure_ms,isi_ms,response_window:'until_next_stimulus',response_window_ms:exposure_ms+isi_ms,save,
-  stimuli,stimulus_order:'sequential',presentation:'single',pair_gap_mm:15,fixation,instructions:'',show_instructions:false,stop_rule:null,
-  adaptive_role:role,adaptive_direction_a_key:'1',adaptive_equal_key:'2',adaptive_direction_b_key:'3',adaptive_threshold:.70
-});
-function verticalLinesPreset(){
-  const eq=builtAsset('01_equal_60_60.png','image/png','assets/stimuli/vertical/01_equal_60_60.png',{natural_width:1200,natural_height:1000,scale_mode:'canvas',width_mm:120,height_mm:100,lock_aspect:true,reference_box:{x_pct:0,y_pct:0,w_pct:100,h_pct:100}});
-  const left=builtAsset('02_large_left_80_40.png','image/png','assets/stimuli/vertical/02_large_left_80_40.png',{natural_width:1200,natural_height:1000,scale_mode:'canvas',width_mm:120,height_mm:100,lock_aspect:true,reference_box:{x_pct:0,y_pct:0,w_pct:100,h_pct:100}});
-  const right=builtAsset('03_large_right_40_80.png','image/png','assets/stimuli/vertical/03_large_right_40_80.png',{natural_width:1200,natural_height:1000,scale_mode:'canvas',width_mm:120,height_mm:100,lock_aspect:true,reference_box:{x_pct:0,y_pct:0,w_pct:100,h_pct:100}});
-  const practice=adaptiveBlock('Practice',3,[eq],'none',false,visualFix());
-  const control=adaptiveBlock('Control',15,[eq],'control',true,visualFix());
-  const set=adaptiveBlock('Set / Induction',15,[left,right],'set',true,visualFix());
-  const critical=adaptiveBlock('Critical',40,[eq],'critical',true,visualFix());
-  critical.stop_rule={type:'consecutive_response',key:'2',count:10};
-  return {template:'generic',preset_kind:'vertical_fixed_set',responses:defaultResponses(),completion_message:'ექსპერიმენტი დასრულებულია. გმადლობთ მონაწილეობისთვის.',calibration:{enabled:true,reference_width_mm:85.60,reference_label:'სტანდარტული საბანკო/ID ბარათი'},elements:[
-    instruction('ინსტრუქცია','ეკრანზე გამოჩნდება ორი ვერტიკალური ხაზი. ხაზები შეიძლება იყოს ტოლი ან მათ შორის შეიძლება იყოს განსხვავება. შეადარეთ მათი სიმაღლეები ერთმანეთს და დააფიქსირეთ მცირე სხვაობაც კი.\n\n1 — მარცხენა უფრო დიდია\n2 — ტოლია\n3 — მარჯვენა უფრო დიდია\n\nექსპერიმენტის მიმდინარეობისას უყურეთ ეკრანის შუაში მოცემულ წითელ წერტილს.'),
-    instruction('სავარჯიშო','ახლა დაიწყება 3 სავარჯიშო ცდა. სავარჯიშო ცდები მონაცემთა ანალიზში არ ჩაითვლება.'),practice,
-    instruction('სავარჯიშო დასრულებულია','სავარჯიშო დასრულებულია. ახლა დაიწყება ექსპერიმენტის ძირითადი ნაწილი. დავალება იგივე რჩება. როცა მზად იქნებით, დააჭირეთ დაწყებას.','ექსპერიმენტის დაწყება'),
-    control,breakEl(5,'5-წუთიანი შუალედი','გადაერთეთ სხვა აქტივობაზე და ნუ უყურებთ ექსპერიმენტულ სტიმულებს.'),set,critical
-  ]};
-}
-function auditoryPreset(){
-  const eq=builtAsset('01_equal_equal.wav','audio/wav','assets/stimuli/auditory/01_equal_equal.wav');
-  const loudQuiet=builtAsset('02_set_loud_quiet.wav','audio/wav','assets/stimuli/auditory/02_set_loud_quiet.wav');
-  const quietLoud=builtAsset('03_set_quiet_loud.wav','audio/wav','assets/stimuli/auditory/03_set_quiet_loud.wav');
-  const responses=[{key:'1',label:'პირველი უფრო ხმამაღალია'},{key:'2',label:'თანაბრად ხმამაღალია'},{key:'3',label:'მეორე უფრო ხმამაღალია'}];
-  const practice=adaptiveBlock('Practice',3,[eq],'none',false,noFix(),2500,1500);
-  const control=adaptiveBlock('Control',15,[eq],'control',true,noFix(),2500,1500);
-  const set=adaptiveBlock('Set / Induction',15,[loudQuiet,quietLoud],'set',true,noFix(),2500,1500);
-  const critical=adaptiveBlock('Critical',40,[eq],'critical',true,noFix(),2500,1500);
-  critical.stop_rule={type:'consecutive_response',key:'2',count:10};
-  return {template:'generic',preset_kind:'auditory_fixed_set',responses,completion_message:'ექსპერიმენტი დასრულებულია. გმადლობთ მონაწილეობისთვის.',calibration:{enabled:false,reference_width_mm:85.60,reference_label:'სტანდარტული საბანკო/ID ბარათი'},elements:[
-    instruction('ინსტრუქცია','ყურსასმენებში მოისმენთ ერთმანეთის მიყოლებით წარმოდგენილ ორ ბგერას. ბგერები შეიძლება იყოს თანაბრად ხმამაღალი ან მათ ხმამაღლობას შორის შეიძლება იყოს განსხვავება.\n\nთქვენი ამოცანაა შეადაროთ ორი ბგერის ხმამაღლობა ერთმანეთს და დააფიქსიროთ მცირე განსხვავებაც კი.\n\n1 — პირველი ბგერა უფრო ხმამაღალია\n2 — ორივე ბგერა თანაბრად ხმამაღალია\n3 — მეორე ბგერა უფრო ხმამაღალია\n\nყურადღებით მოუსმინეთ ორივე ბგერას და მხოლოდ ამის შემდეგ დააფიქსირეთ პასუხი. ექსპერიმენტის მიმდინარეობისას არ შეცვალოთ მოწყობილობის ხმის დონე.'),
-    instruction('სავარჯიშო','ახლა დაიწყება სავარჯიშო ნაწილი. მოისმენთ ერთმანეთის მიყოლებით ორ ბგერას. შეადარეთ მათი ხმამაღლობა და უპასუხეთ 1, 2 ან 3 ღილაკით. სავარჯიშო ცდების შედეგები ექსპერიმენტის მონაცემებში არ ჩაითვლება.'),practice,
-    instruction('სავარჯიშო დასრულებულია','სავარჯიშო დასრულებულია.\n\nახლა დაიწყება ექსპერიმენტის ძირითადი ნაწილი. დავალება იგივე რჩება:\n\n1 — პირველი ბგერა უფრო ხმამაღალია\n2 — ორივე ბგერა თანაბრად ხმამაღალია\n3 — მეორე ბგერა უფრო ხმამაღალია\n\nექსპერიმენტის განმავლობაში არ შეცვალოთ მოწყობილობის ხმის დონე.','ექსპერიმენტის დაწყება'),
-    control,breakEl(5,'5-წუთიანი შუალედი','ექსპერიმენტის შემდეგი ნაწილი დაიწყება 5 წუთის შემდეგ. გთხოვთ, ამ დროის განმავლობაში არ შეცვალოთ მოწყობილობის ხმის დონე.'),set,critical
-  ]};
-}
-function presetConfig(preset){
-  if(preset==='fixed') return fixedSetPreset();
-  if(preset==='vertical') return verticalLinesPreset();
-  if(preset==='auditory') return auditoryPreset();
-  return {template:'generic',responses:defaultResponses(),calibration:{enabled:true,reference_width_mm:85.60},elements:[instruction(),blankBlock()],completion_message:'გმადლობთ მონაწილეობისთვის.'};
-}
-function presetMeta(preset,cfg){
-  if(preset==='fixed'||cfg?.template==='uznadze_fixed_set') return {name:'Uznadze Fixed Set — Circles',slug:'uznadze-fixed-set-circles'};
-  if(preset==='vertical'||cfg?.preset_kind==='vertical_fixed_set') return {name:'Vertical Lines — Fixed Set',slug:'vertical-lines-fixed-set'};
-  if(preset==='auditory'||cfg?.preset_kind==='auditory_fixed_set') return {name:'Auditory Fixed Set',slug:'auditory-fixed-set'};
-  return {name:'',slug:''};
-}
+  const A = document.getElementById('app');
+  const badge = document.getElementById('modeBadge');
+  const logout = document.getElementById('logoutBtn');
 
-async function boot(){const u=await CogDB.user();if(!u&&!CogDB.demo)return auth();if(!CogDB.demo&&!(await CogDB.admin()))return denied(u);if(CogDB.demo){const es=await CogDB.experiments(true);if(!es.length)await CogDB.saveExperiment({id:uid(),name:'Uznadze Fixed Set',slug:'uznadze-fixed-set',description:'ფიქსირებული განწყობის ვიზუალური ექსპერიმენტი',status:'published',version:1,config:fixedSetPreset(),created_at:new Date().toISOString()})}logout.classList.remove('hidden');logout.onclick=async()=>{await CogDB.signOut();location.reload()};shell();go('experiments')}
-function auth(){A.innerHTML=`<section class="card login"><h2>Admin login</h2><div class="field"><label>Email</label><input id="em"></div><div class="field"><label>Password</label><input id="pw" type="password"></div><div id="err" class="alert danger hidden"></div><button id="authGo" class="btn primary">შესვლა</button></section>`;authGo.onclick=async()=>{try{await CogDB.signIn(em.value.trim(),pw.value);location.reload()}catch(e){err.textContent=e.message;err.classList.remove('hidden')}}}
-function denied(u){A.innerHTML=`<section class="card login"><h2>Access denied</h2><p>${esc(u?.email||'')} არ არის Admin სიაში.</p></section>`}
-function shell(){A.innerHTML=`<div class="layout"><aside class="card sidebar"><button class="navbtn" data-go="experiments">Experiments</button><button class="navbtn" data-go="new">+ Create experiment</button><button class="navbtn" data-go="results">Results</button><button class="navbtn" data-go="setup">Setup</button></aside><section id="content"></section></div>`;content=document.getElementById('content');document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go))}
-async function go(n,arg){document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.go===(n==='edit'?'experiments':n)));if(n==='experiments')return list();if(n==='new')return chooseNew();if(n==='builder')return builder(null,arg);if(n==='edit')return builder(arg);if(n==='results')return results();if(n==='setup')return setup()}
-async function list(){const es=await CogDB.experiments(true);content.innerHTML=`<div class="section-head"><div><h2>Experiments</h2><p class="muted">Universal image / audio / video experiment builder with calibrated visual stimuli.</p></div><button id="newBtn" class="btn primary">+ Create experiment</button></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Status</th><th>Participant link</th><th></th></tr></thead><tbody>${es.map(e=>`<tr><td><b>${esc(e.name)}</b><br><span class="muted">${esc(e.slug)}</span></td><td>${e.status}</td><td>${e.status==='published'?`<a href="run.html?exp=${encodeURIComponent(e.slug)}" target="_blank">Open</a>`:'—'}</td><td><button class="btn small" data-edit="${e.id}">Edit</button> <button class="btn small danger" data-delete="${e.id}">Delete</button></td></tr>`).join('')}</tbody></table></div>`;newBtn.onclick=()=>go('new');document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>go('edit',b.dataset.edit));document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{if(confirm('წავშალოთ?')){await CogDB.deleteExperiment(b.dataset.delete);list()}})}
-function chooseNew(){content.innerHTML=`<div class="grid two"><button class="choice-card" id="blank"><h3>Blank experiment</h3><p>Universal image / audio / video builder.</p></button><button class="choice-card" id="fixed"><h3>Fixed Set — Circles</h3><p>Built-in calibrated 40/60/80 mm circles.</p></button><button class="choice-card" id="vertical"><h3>Fixed Set — Vertical Lines</h3><p>Built-in calibrated 60/60, 80/40 and 40/80 line stimuli.</p></button><button class="choice-card" id="auditory"><h3>Auditory Fixed Set</h3><p>Built-in verified two-tone WAV stimuli with 2:1 digital amplitude manipulation.</p></button></div>`;blank.onclick=()=>go('builder','blank');fixed.onclick=()=>go('builder','fixed');vertical.onclick=()=>go('builder','vertical');auditory.onclick=()=>go('builder','auditory')}
-async function builder(id,preset){const es=await CogDB.experiments(true),old=id?es.find(x=>x.id===id):null;let cfg=structuredClone(old?.config||presetConfig(preset));const pm=presetMeta(preset,cfg);cfg.calibration=cfg.calibration||{enabled:true,reference_width_mm:85.60};let responses=cfg.responses||defaultResponses(),elements=cfg.elements||[];
-content.innerHTML=`<div class="section-head"><div><h2>${old?'Edit':'Create'} experiment</h2><p class="muted">Free timeline, image/audio/video stimuli, calibrated visual sizing, pseudorandom order and research-safe response handling.</p></div><span class="badge">${cfg.template==='uznadze_fixed_set'?'FIXED SET':'GENERIC'}</span></div><div class="grid two"><section class="card"><h3>General</h3><div class="field"><label>Name</label><input id="nm" value="${esc(old?.name||pm.name)}"></div><div class="field"><label>URL slug</label><input id="sl" value="${esc(old?.slug||pm.slug)}"></div><div class="field"><label>Description</label><textarea id="ds">${esc(old?.description||'')}</textarea></div><div class="field"><label>Completion message</label><textarea id="cm">${esc(cfg.completion_message||'')}</textarea></div><div class="field"><label>Status</label><select id="st"><option value="draft">Draft</option><option value="published" ${old?.status==='published'?'selected':''}>Published</option><option value="archived" ${old?.status==='archived'?'selected':''}>Archived</option></select></div><label class="checkline"><input id="cal_enabled" type="checkbox" ${cfg.calibration.enabled!==false?'checked':''}> Physical calibration required</label></section><section class="card"><div class="section-head"><h3>Response keys</h3><button id="addR" class="btn small">+ Add</button></div><div id="resp"></div></section></div>${cfg.template==='uznadze_fixed_set'?fixedHTML(cfg.fixed_set):''}<div class="section-head timeline-head"><div><h2>Experiment timeline</h2><p class="muted">Instruction / Block / Break — შენს მიერ არჩეული რიგით.</p></div><div class="row"><button id="addI" class="btn">+ Instruction</button><button id="addB" class="btn">+ Block</button><button id="addBreak" class="btn">+ Break</button></div></div><div id="elements"></div><div class="row"><button id="save" class="btn primary">Save experiment</button><button id="cancel" class="btn">Cancel</button></div>`;
-nm.oninput=()=>{if(!old&&!sl.dataset.touched)sl.value=slugify(nm.value)};sl.oninput=()=>sl.dataset.touched='1';addR.onclick=()=>{responses.push({key:'',label:''});renderResponses()};addI.onclick=()=>{elements.push(instruction());renderElements()};addB.onclick=()=>{elements.push(blankBlock(`Block ${elements.filter(e=>e.type==='block').length+1}`));renderElements()};addBreak.onclick=()=>{elements.push(breakEl());renderElements()};cancel.onclick=()=>go('experiments');
-function fixedHTML(fs={}){return `<section class="card preset-settings"><h3>Fixed Set scientific settings</h3><div class="inline"><div class="field"><label>Practice</label><input id="fs_practice" type="number" min="1" max="3" value="${fs.practice_trials??3}"></div><div class="field"><label>Control</label><input id="fs_control" type="number" min="15" value="${fs.control_trials??15}"></div><div class="field"><label>Set</label><input id="fs_set" type="number" value="${fs.set_trials??15}"></div></div><div class="inline"><div class="field"><label>Critical max</label><input id="fs_critical" type="number" max="40" value="${fs.critical_max_trials??40}"></div><div class="field"><label>Consecutive equal stop</label><input id="fs_stop" type="number" value="${fs.critical_stop_count??10}"></div><div class="field"><label>Asymmetry threshold</label><input id="fs_threshold" type="number" step=".01" value="${fs.natural_asymmetry_threshold??.70}"></div></div><div class="inline"><div class="field"><label>Exposure ms</label><input id="fs_exposure" type="number" value="${fs.exposure_ms??1000}"></div><div class="field"><label>ISI ms</label><input id="fs_isi" type="number" value="${fs.isi_ms??1500}"></div><div class="field"><label>Break sec</label><input id="fs_break" type="number" value="${(fs.break_ms??300000)/1000}"></div></div><div class="inline"><div class="field"><label>Small mm</label><input id="fs_small" type="number" value="${fs.small_mm??40}"></div><div class="field"><label>Equal mm</label><input id="fs_equal" type="number" value="${fs.equal_mm??60}"></div><div class="field"><label>Large mm</label><input id="fs_large" type="number" value="${fs.large_mm??80}"></div></div><p class="muted"><b>Response window:</b> stimulus onset → next stimulus onset. ISI-ში დაჭერილი პასუხი წინა trial-ს ეკუთვნის.</p></section>`}
-function renderResponses(){resp.innerHTML=responses.map((r,i)=>`<div class="row"><input style="width:90px" data-rk="${i}" value="${esc(r.key)}"><input style="flex:1" data-rl="${i}" value="${esc(r.label)}"><button class="btn small" data-rd="${i}">×</button></div><br>`).join('');document.querySelectorAll('[data-rk]').forEach(x=>x.oninput=()=>responses[+x.dataset.rk].key=x.value);document.querySelectorAll('[data-rl]').forEach(x=>x.oninput=()=>responses[+x.dataset.rl].label=x.value);document.querySelectorAll('[data-rd]').forEach(x=>x.onclick=()=>{responses.splice(+x.dataset.rd,1);renderResponses()})}
-function stimHTML(s,i,j){
-  const visual=(s.type||'').startsWith('image/');
-  s.scale_mode=s.scale_mode||'canvas';
-  s.reference_box=s.reference_box||{x_pct:0,y_pct:0,w_pct:100,h_pct:100};
-  const box=s.reference_box;
-  const ar=s.natural_width&&s.natural_height?`style="aspect-ratio:${s.natural_width}/${s.natural_height};height:auto"`:'';
-  return `<div class="stim-card">${visual?`<div class="stim-preview-wrap" ${ar}><img src="${s.url}" class="stim-preview"><div class="ref-box" style="left:${box.x_pct||0}%;top:${box.y_pct||0}%;width:${box.w_pct||100}%;height:${box.h_pct||100}%"></div></div>`:`<div class="stim-file-icon">${esc((s.type||'file').split('/')[0])}</div>`}<div class="stim-meta"><b>${esc(s.name)}</b>${visual?`
-    <div class="field compact"><label>Physical scaling</label><select data-stimstr="${i}:${j}" data-sk="scale_mode"><option value="canvas" ${s.scale_mode!=='reference_box'?'selected':''}>Whole image canvas</option><option value="reference_box" ${s.scale_mode==='reference_box'?'selected':''}>Measured object / reference box</option></select></div>
-    <div class="stim-section ${s.scale_mode==='reference_box'?'muted-panel':''}"><b>Whole canvas size</b><div class="stim-dims"><label>Width mm <input type="number" step=".1" min="0" data-stim="${i}:${j}" data-sk="width_mm" value="${s.width_mm??''}" placeholder="auto"></label><label>Height mm <input type="number" step=".1" min="0" data-stim="${i}:${j}" data-sk="height_mm" value="${s.height_mm??''}" placeholder="auto"></label></div></div>
-    <div class="stim-section"><b>Reference box inside image</b><p class="muted">მონიშნე stimulus-ის ის ნაწილი, რომლის რეალური ზომაც იცი. მნიშვნელობები არის image-ის პროცენტები.</p><div class="ref-grid"><label>X %<input type="number" step=".1" data-box="${i}:${j}" data-bk="x_pct" value="${box.x_pct??0}"></label><label>Y %<input type="number" step=".1" data-box="${i}:${j}" data-bk="y_pct" value="${box.y_pct??0}"></label><label>W %<input type="number" step=".1" min=".1" max="100" data-box="${i}:${j}" data-bk="w_pct" value="${box.w_pct??100}"></label><label>H %<input type="number" step=".1" min=".1" max="100" data-box="${i}:${j}" data-bk="h_pct" value="${box.h_pct??100}"></label></div><div class="stim-dims"><label>Reference width mm <input type="number" step=".1" min="0" data-stim="${i}:${j}" data-sk="reference_width_mm" value="${s.reference_width_mm??''}" placeholder="optional"></label><label>Reference height mm <input type="number" step=".1" min="0" data-stim="${i}:${j}" data-sk="reference_height_mm" value="${s.reference_height_mm??''}" placeholder="optional"></label></div><p class="muted">Reference Box რეჟიმში საკმარისია ერთი რეალური განზომილება (მაგ. ხაზის სიმაღლე 60 mm). image-ის დანარჩენი გეომეტრია იგივე მასშტაბით დარჩება.</p></div>
-    <label class="checkline"><input type="checkbox" data-stim="${i}:${j}" data-sk="lock_aspect" ${s.lock_aspect!==false?'checked':''}> Lock aspect ratio</label>`:''}<button class="btn small danger" data-remstim="${i}:${j}">Remove</button></div></div>`;
-}
-function elementHTML(e,i){
-  const tools=`<div class="element-tools"><button class="btn small" data-up="${i}">↑</button><button class="btn small" data-down="${i}">↓</button><button class="btn small danger" data-del="${i}">Remove</button></div>`;
-  if(e.type==='instruction')return `<section class="card element-card"><div class="section-head"><h3>INSTRUCTION — ${esc(e.title)}</h3>${tools}</div><div class="field"><label>Title</label><input data-el="${i}" data-k="title" value="${esc(e.title)}"></div><div class="field"><label>Text</label><textarea class="instruction-editor" data-el="${i}" data-k="text">${esc(e.text)}</textarea></div><div class="field"><label>Button</label><input data-el="${i}" data-k="button_text" value="${esc(e.button_text||'გაგრძელება')}"></div></section>`;
-  if(e.type==='break')return `<section class="card element-card"><div class="section-head"><h3>BREAK — ${esc(e.title)}</h3>${tools}</div><div class="inline"><div class="field"><label>Title</label><input data-el="${i}" data-k="title" value="${esc(e.title)}"></div><div class="field"><label>Duration sec</label><input type="number" data-el="${i}" data-k="duration_sec" value="${(e.duration_ms||0)/1000}"></div><div class="field"><label>Button</label><input data-el="${i}" data-k="button_text" value="${esc(e.button_text||'გაგრძელება')}"></div></div><div class="field"><label>Message</label><textarea data-el="${i}" data-k="text">${esc(e.text||'')}</textarea></div></section>`;
-  if(e.type==='fixedset_stage')return `<section class="card element-card preset-element"><div class="section-head"><h3>FIXED SET — ${esc(e.name)}</h3>${tools}</div><p class="muted">Calibrated generated circles. Stage: ${esc(e.stage)}</p></section>`;
-  e.fixation=e.fixation||{mode:'red_dot',size_mm:4,asset:null};
-  return `<section class="card element-card"><div class="section-head"><h3>BLOCK — ${esc(e.name)}</h3>${tools}</div>
-    <div class="inline"><div class="field"><label>Name</label><input data-el="${i}" data-k="name" value="${esc(e.name)}"></div><div class="field"><label>Trials</label><input type="number" data-el="${i}" data-k="trials" value="${e.trials||1}"></div><div class="field"><label>Save</label><select data-el="${i}" data-k="save"><option value="true" ${e.save!==false?'selected':''}>Yes</option><option value="false" ${e.save===false?'selected':''}>No</option></select></div></div>
-    <div class="inline"><div class="field"><label>Exposure ms</label><input type="number" data-el="${i}" data-k="exposure_ms" value="${e.exposure_ms||1000}"></div><div class="field"><label>ISI ms</label><input type="number" data-el="${i}" data-k="isi_ms" value="${e.isi_ms||0}"></div><div class="field"><label>Response window</label><select data-el="${i}" data-k="response_window"><option value="until_next_stimulus" ${e.response_window==='until_next_stimulus'||!e.response_window?'selected':''}>Until next stimulus</option><option value="exposure_only" ${e.response_window==='exposure_only'?'selected':''}>Exposure only</option><option value="custom_ms" ${e.response_window==='custom_ms'?'selected':''}>Custom ms</option></select></div></div>
-    <div class="inline"><div class="field"><label>Custom response ms</label><input type="number" data-el="${i}" data-k="response_window_ms" value="${e.response_window_ms??(+e.exposure_ms||1000)+(+e.isi_ms||0)}"></div><div class="field"><label>Presentation</label><select data-el="${i}" data-k="presentation"><option value="single" ${e.presentation!=='pair'?'selected':''}>Single / complete scene image</option><option value="pair" ${e.presentation==='pair'?'selected':''}>Pair (two separate uploaded objects)</option></select></div><div class="field"><label>Stimulus order</label><select data-el="${i}" data-k="stimulus_order"><option value="sequential" ${e.stimulus_order==='sequential'||!e.stimulus_order?'selected':''}>Sequential / uploaded order</option><option value="random" ${e.stimulus_order==='random'?'selected':''}>Random</option><option value="pseudorandom" ${e.stimulus_order==='pseudorandom'?'selected':''}>Pseudorandom / balanced</option></select></div></div>
-    <div class="inline"><div class="field"><label>Pair gap mm</label><input type="number" step=".1" data-el="${i}" data-k="pair_gap_mm" value="${e.pair_gap_mm??15}"></div><div class="field"><label>Fixation</label><select data-fix="${i}" data-fk="mode"><option value="red_dot" ${e.fixation.mode==='red_dot'?'selected':''}>Red dot</option><option value="uploaded" ${e.fixation.mode==='uploaded'?'selected':''}>Uploaded image</option><option value="none" ${e.fixation.mode==='none'?'selected':''}>None</option></select></div><div class="field"><label>Fixation size mm</label><input type="number" step=".1" min="0" data-fix="${i}" data-fk="size_mm" value="${e.fixation.size_mm??4}"></div></div>
-    <div class="fix-upload"><label class="btn small">Upload fixation image <input class="hidden" type="file" accept="image/*" data-fixupload="${i}"></label> ${e.fixation.asset?`<span class="muted">${esc(e.fixation.asset.name)}</span> <button class="btn small danger" data-fixremove="${i}">Remove</button>`:'<span class="muted">No custom fixation uploaded.</span>'}</div>
-    <p class="muted"><b>ISI:</b> stimulus გაქრება; თუ fixation არჩეულია, ის უწყვეტად დარჩება. “Until next stimulus” რეჟიმში ISI-ში დაჭერილი პასუხი მიმდინარე trial-ს ეკუთვნის.</p>
-    <div class="stim-section"><b>Adaptive Fixed-Set logic (optional)</b><div class="inline"><div class="field"><label>Role</label><select data-el="${i}" data-k="adaptive_role"><option value="none" ${!e.adaptive_role||e.adaptive_role==='none'?'selected':''}>None</option><option value="control" ${e.adaptive_role==='control'?'selected':''}>Control</option><option value="set" ${e.adaptive_role==='set'?'selected':''}>Set / Induction</option><option value="critical" ${e.adaptive_role==='critical'?'selected':''}>Critical</option></select></div><div class="field"><label>Direction A key</label><input data-el="${i}" data-k="adaptive_direction_a_key" value="${esc(e.adaptive_direction_a_key||'1')}"></div><div class="field"><label>Equal key</label><input data-el="${i}" data-k="adaptive_equal_key" value="${esc(e.adaptive_equal_key||'2')}"></div><div class="field"><label>Direction B key</label><input data-el="${i}" data-k="adaptive_direction_b_key" value="${esc(e.adaptive_direction_b_key||'3')}"></div><div class="field"><label>Threshold</label><input type="number" min="0" max="1" step=".01" data-el="${i}" data-k="adaptive_threshold" value="${e.adaptive_threshold??.70}"></div></div><p class="muted">Set role: upload exactly two variants. Variant A = first uploaded stimulus, Variant B = second. Control directional errors > threshold choose the matching variant; otherwise participant-level counterbalancing chooses one variant and keeps it fixed for the full Set block.</p></div>
-    <div class="stim-section"><b>Stopping rule (optional)</b><div class="inline"><div class="field"><label>Rule</label><select data-stop="${i}" data-sk="type"><option value="none" ${!e.stop_rule?'selected':''}>None</option><option value="consecutive_response" ${e.stop_rule?.type==='consecutive_response'?'selected':''}>Consecutive response</option></select></div><div class="field"><label>Response key</label><input data-stop="${i}" data-sk="key" value="${esc(e.stop_rule?.key||'2')}"></div><div class="field"><label>Count</label><input type="number" min="1" data-stop="${i}" data-sk="count" value="${e.stop_rule?.count||10}"></div></div></div>
-    <label class="checkline"><input type="checkbox" data-el="${i}" data-k="show_instructions" ${e.show_instructions?'checked':''}> Show block instructions</label><textarea data-el="${i}" data-k="instructions">${esc(e.instructions||'')}</textarea>
-    <div class="stimulus-library"><div class="section-head"><div><h4>Stimuli</h4><p class="muted">Upload your own image/audio/video. ვერტიკალური ხაზები ან სხვა ფორმები კოდში წინასწარ ჩაშენებული არ არის.</p></div><label class="btn">+ Upload <input class="hidden" type="file" multiple accept="image/*,audio/*,video/*" data-upel="${i}"></label></div><div class="stim-grid">${(e.stimuli||[]).map((s,j)=>stimHTML(s,i,j)).join('')||'<p class="muted">No stimuli uploaded.</p>'}</div></div>
-  </section>`;
-}
-function renderElements(){
-  elements.forEach(e=>{if(e.type==='block'){e.stimuli=e.stimuli||[];e.response_window=e.response_window||'until_next_stimulus';e.presentation=e.presentation||'single';e.stimulus_order=e.stimulus_order||'sequential';e.fixation=e.fixation||{mode:'red_dot',size_mm:4,asset:null};e.adaptive_role=e.adaptive_role||'none';e.adaptive_direction_a_key=e.adaptive_direction_a_key||'1';e.adaptive_equal_key=e.adaptive_equal_key||'2';e.adaptive_direction_b_key=e.adaptive_direction_b_key||'3';e.adaptive_threshold=e.adaptive_threshold??.70}});
-  document.getElementById('elements').innerHTML=elements.map(elementHTML).join('');
-  document.querySelectorAll('[data-el]').forEach(x=>x.onchange=x.oninput=()=>updateEl(x));
-  document.querySelectorAll('[data-upel]').forEach(x=>x.onchange=async()=>{const i=+x.dataset.upel;for(const f of x.files){let a=await CogDB.uploadStimulus(f);a=await imageMeta(a);a.lock_aspect=true;a.scale_mode='canvas';a.reference_box={x_pct:0,y_pct:0,w_pct:100,h_pct:100};elements[i].stimuli.push(a)}renderElements()});
-  document.querySelectorAll('[data-stim]').forEach(x=>x.onchange=x.oninput=()=>{const [i,j]=x.dataset.stim.split(':').map(Number),s=elements[i].stimuli[j],k=x.dataset.sk;s[k]=x.type==='checkbox'?x.checked:(x.value===''?null:+x.value)});
-  document.querySelectorAll('[data-stimstr]').forEach(x=>x.onchange=()=>{const [i,j]=x.dataset.stimstr.split(':').map(Number);elements[i].stimuli[j][x.dataset.sk]=x.value;renderElements()});
-  document.querySelectorAll('[data-box]').forEach(x=>x.onchange=x.oninput=()=>{const [i,j]=x.dataset.box.split(':').map(Number),s=elements[i].stimuli[j];s.reference_box=s.reference_box||{};s.reference_box[x.dataset.bk]=+x.value});
-  document.querySelectorAll('[data-remstim]').forEach(x=>x.onclick=()=>{const [i,j]=x.dataset.remstim.split(':').map(Number);elements[i].stimuli.splice(j,1);renderElements()});
-  document.querySelectorAll('[data-fix]').forEach(x=>x.onchange=x.oninput=()=>{const e=elements[+x.dataset.fix];e.fixation=e.fixation||{};e.fixation[x.dataset.fk]=x.dataset.fk==='size_mm'?+x.value:x.value});
-  document.querySelectorAll('[data-fixupload]').forEach(x=>x.onchange=async()=>{const i=+x.dataset.fixupload,f=x.files?.[0];if(!f)return;elements[i].fixation=elements[i].fixation||{};elements[i].fixation.asset=await imageMeta(await CogDB.uploadStimulus(f));elements[i].fixation.mode='uploaded';renderElements()});
-  document.querySelectorAll('[data-fixremove]').forEach(x=>x.onclick=()=>{const e=elements[+x.dataset.fixremove];e.fixation.asset=null;if(e.fixation.mode==='uploaded')e.fixation.mode='red_dot';renderElements()});
-  document.querySelectorAll('[data-stop]').forEach(x=>x.onchange=x.oninput=()=>{const e=elements[+x.dataset.stop],k=x.dataset.sk;if(k==='type'){e.stop_rule=x.value==='none'?null:{type:'consecutive_response',key:e.stop_rule?.key||'2',count:e.stop_rule?.count||10};renderElements()}else{e.stop_rule=e.stop_rule||{type:'consecutive_response',key:'2',count:10};e.stop_rule[k]=k==='count'?+x.value:x.value}});
-  document.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>{elements.splice(+x.dataset.del,1);renderElements()});
-  document.querySelectorAll('[data-up]').forEach(x=>x.onclick=()=>{const i=+x.dataset.up;if(i){[elements[i-1],elements[i]]=[elements[i],elements[i-1]];renderElements()}});
-  document.querySelectorAll('[data-down]').forEach(x=>x.onclick=()=>{const i=+x.dataset.down;if(i<elements.length-1){[elements[i+1],elements[i]]=[elements[i],elements[i+1]];renderElements()}});
-}
-function updateEl(x){const e=elements[+x.dataset.el],k=x.dataset.k;if(k==='show_instructions')e[k]=x.checked;else if(['trials','exposure_ms','isi_ms','pair_gap_mm','response_window_ms','adaptive_threshold'].includes(k))e[k]=+x.value;else if(k==='duration_sec')e.duration_ms=+x.value*1000;else if(k==='save')e.save=x.value==='true';else e[k]=x.value}
-function validateFixed(){const si=elements.findIndex(e=>e.type==='fixedset_stage'&&e.stage==='set'),ci=elements.findIndex(e=>e.type==='fixedset_stage'&&e.stage==='critical');if(si<0||ci!==si+1)throw Error('Fixed Set: Set → Critical უნდა იყოს უშუალო.');if(+fs_practice.value>3||+fs_control.value<15||+fs_critical.value>40||+fs_break.value<300||+fs_exposure.value<500)throw Error('Fixed Set scientific settings არ შეესაბამება მინიმალურ პროტოკოლურ საზღვრებს.')}
-save.onclick=async()=>{try{if(!nm.value.trim()||!sl.value.trim())throw Error('Name და slug აუცილებელია.');cfg.responses=responses.filter(r=>r.key);cfg.elements=elements;cfg.completion_message=cm.value;cfg.calibration={enabled:cal_enabled.checked,reference_width_mm:85.60,reference_label:'სტანდარტული საბანკო/ID ბარათი'};if(cfg.template==='uznadze_fixed_set'){validateFixed();cfg.fixed_set={...cfg.fixed_set,practice_trials:+fs_practice.value,control_trials:+fs_control.value,set_trials:+fs_set.value,critical_max_trials:+fs_critical.value,critical_stop_count:+fs_stop.value,critical_stop_key:'2',natural_asymmetry_threshold:+fs_threshold.value,exposure_ms:+fs_exposure.value,isi_ms:+fs_isi.value,response_window:'until_next_stimulus',break_ms:+fs_break.value*1000,small_mm:+fs_small.value,equal_mm:+fs_equal.value,large_mm:+fs_large.value};const be=elements.find(e=>e.role==='control_set_break');if(be)be.duration_ms=cfg.fixed_set.break_ms}await CogDB.saveExperiment({id:old?.id||uid(),name:nm.value.trim(),slug:sl.value.trim(),description:ds.value.trim(),status:st.value,version:(old?.version||0)+1,config:cfg,created_at:old?.created_at||new Date().toISOString()});go('experiments')}catch(e){alert(e.message)}};renderResponses();renderElements()}
-async function results(){const es=await CogDB.experiments(true);content.innerHTML=`<section class="card"><div class="row"><select id="rex"><option value="">All experiments</option>${es.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select><button id="load" class="btn">Load</button><button id="xlsx" class="btn primary">Export Excel</button></div><div id="rout"></div></section>`;let data={sessions:[],trials:[]};async function refresh(){data=await CogDB.results(rex.value);rout.innerHTML=`<p><b>${data.sessions.length}</b> participants · <b>${data.trials.length}</b> saved trials</p>`}load.onclick=refresh;xlsx.onclick=()=>exportExcel(data,es.find(e=>e.id===rex.value));await refresh()}
-function exportExcel(data,exp){if(!window.XLSX)return alert('Excel unavailable');const by=new Map();data.trials.forEach(t=>{if(!by.has(t.session_id))by.set(t.session_id,[]);by.get(t.session_id).push(t)});const blocks=[...new Set(data.trials.map(t=>t.block_name))],keys=[...new Set([...(exp?.config?.responses||[]).map(r=>r.key),...data.trials.map(t=>t.response_key).filter(Boolean)])];const ps=data.sessions.map(s=>{const ts=by.get(s.id)||[],r={Participant:s.participant_code,Completed:s.completed_at?'Yes':'No',Validity:s.validity_status||''};for(const b of blocks){const bt=ts.filter(t=>t.block_name===b),miss=bt.filter(t=>t.missing).length;r[`${b} N`]=bt.length;for(const k of keys){const n=bt.filter(t=>t.response_key===k).length;r[`${b} ${k}`]=n;r[`${b} ${k} %`]=bt.length?+(100*n/bt.length).toFixed(1):0}r[`${b} Sequence`]=bt.map(t=>t.response_key||'MISSING').join(',');r[`${b} Missing`]=miss;r[`${b} Missing %`]=bt.length?+(100*miss/bt.length).toFixed(1):0;r[`${b} Extra keypresses`]=bt.reduce((n,t)=>n+(t.metadata?.extra_keypress_count||0),0)}Object.assign(r,s.summary||{});return r});const tr=data.trials.map(t=>({Participant:t.participant_code,Block:t.block_name,Global_Trial:t.global_trial,Block_Trial:t.block_trial,Stimulus:t.stimulus_name,Stimulus_Type:t.stimulus_type,Response_Key:t.response_key||'',Response_Label:t.response_label||'',RT_ms:t.rt_ms,Missing:t.missing?'TRUE':'FALSE',Response_During:t.metadata?.response_during||'',Extra_Keypress_Count:t.metadata?.extra_keypress_count||0,Extra_Keypresses:JSON.stringify(t.metadata?.extra_keypresses||[]),Stimulus_Order:t.metadata?.stimulus_order||'',Adaptive_Role:t.metadata?.adaptive_role||'',Adaptive_Asymmetry:t.metadata?.adaptive_asymmetry||'',Adaptive_Set_Variant:t.metadata?.adaptive_set_variant??'',Metadata:JSON.stringify(t.metadata||{})}));const settings=[];if(exp){settings.push({Setting:'Name',Value:exp.name},{Setting:'Version',Value:exp.version},{Setting:'Template',Value:exp.config?.template},{Setting:'Calibration required',Value:exp.config?.calibration?.enabled?'Yes':'No'});(exp.config?.responses||[]).forEach((r,i)=>settings.push({Setting:`Response ${i+1}`,Value:`${r.key} = ${r.label}`}));(exp.config?.elements||[]).forEach((e,i)=>{settings.push({Setting:`Timeline ${i+1}`,Value:`${e.type}: ${e.title||e.name||e.stage||''}`});if(e.type==='block'){settings.push({Setting:`${e.name} trials`,Value:e.trials},{Setting:`${e.name} exposure ms`,Value:e.exposure_ms},{Setting:`${e.name} ISI ms`,Value:e.isi_ms},{Setting:`${e.name} order`,Value:e.stimulus_order},{Setting:`${e.name} adaptive role`,Value:e.adaptive_role||'none'},{Setting:`${e.name} stop rule`,Value:e.stop_rule?JSON.stringify(e.stop_rule):'none'})}})}const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(ps),'Participants');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(tr),'Trial_Data');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(settings),'Experiment_Settings');XLSX.writeFile(wb,`${exp?.slug||'cogexperiments'}_results.xlsx`)}
-function setup(){content.innerHTML=`<section class="card"><h3>${CogDB.demo?'Demo Mode':'Supabase connected'}</h3><p>Build: ${esc(COG_CONFIG.BUILD)}</p></section>`}
-boot().catch(e=>{console.error(e);A.innerHTML=`<div class="alert danger">${esc(e.message)}</div>`})
+  badge.textContent = CogDB.demo
+    ? 'DEMO MODE'
+    : 'LIVE / SUPABASE';
+
+
+  const esc = s =>
+    String(s ?? '').replace(
+      /[&<>"']/g,
+      c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c])
+    );
+
+
+  const uid = () =>
+    crypto.randomUUID();
+
+
+  const slugify = s =>
+    s
+      .toLowerCase()
+      .trim()
+      .replace(
+        /[^\p{L}\p{N}]+/gu,
+        '-'
+      )
+      .replace(
+        /^-|-$/g,
+        ''
+      );
+
+
+  let content;
+
+
+  const imageMeta = a =>
+    new Promise(res => {
+      if (
+        !(a.type || '')
+          .startsWith('image/')
+      ) {
+        return res(a);
+      }
+
+      const im = new Image();
+
+      im.onload = () =>
+        res({
+          ...a,
+          natural_width:
+            im.naturalWidth,
+          natural_height:
+            im.naturalHeight
+        });
+
+      im.onerror = () =>
+        res(a);
+
+      im.src = a.url;
+    });
+
+
+  const defaultResponses = () => [
+    {
+      key: '1',
+      label: 'მარცხენა დიდია'
+    },
+    {
+      key: '2',
+      label: 'ტოლია'
+    },
+    {
+      key: '3',
+      label: 'მარჯვენა დიდია'
+    }
+  ];
+
+
+  const instruction = (
+    title = 'ინსტრუქცია',
+    text = '',
+    button_text = 'გაგრძელება'
+  ) => ({
+    id: uid(),
+    type: 'instruction',
+    title,
+    text,
+    button_text
+  });
+
+
+  const breakEl = (
+    minutes = 0,
+    title = 'შუალედი',
+    text = ''
+  ) => ({
+    id: uid(),
+    type: 'break',
+    duration_ms:
+      minutes * 60000,
+    title,
+    text,
+    button_text:
+      'გაგრძელება'
+  });
+
+
+  const blankBlock = (
+    name = 'Block 1'
+  ) => ({
+    id: uid(),
+    type: 'block',
+    name,
+    trials: 10,
+    exposure_ms: 1000,
+    isi_ms: 1000,
+    response_window:
+      'until_next_stimulus',
+    response_window_ms: 2500,
+    save: true,
+    stimuli: [],
+    stimulus_order:
+      'sequential',
+    presentation: 'single',
+    pair_gap_mm: 15,
+    fixation: {
+      mode: 'red_dot',
+      size_mm: 4,
+      asset: null
+    },
+    instructions: '',
+    show_instructions: false,
+    stop_rule: null,
+    adaptive_role: 'none',
+    adaptive_direction_a_key:
+      '1',
+    adaptive_equal_key:
+      '2',
+    adaptive_direction_b_key:
+      '3',
+    adaptive_threshold:
+      0.70
+  });
+
+
+  function fixedSetPreset() {
+    return {
+      template:
+        'uznadze_fixed_set',
+
+      responses:
+        defaultResponses(),
+
+      completion_message:
+        'ექსპერიმენტი დასრულდა. გმადლობთ მონაწილეობისთვის.',
+
+      calibration: {
+        enabled: true,
+        reference_width_mm:
+          85.60,
+        reference_label:
+          'სტანდარტული საბანკო/ID ბარათი'
+      },
+
+      fixed_set: {
+        practice_trials: 3,
+        control_trials: 15,
+        set_trials: 15,
+
+        critical_max_trials:
+          40,
+
+        critical_stop_key:
+          '2',
+
+        critical_stop_count:
+          10,
+
+        exposure_ms: 1000,
+        isi_ms: 1500,
+
+        response_window:
+          'until_next_stimulus',
+
+        small_mm: 40,
+        equal_mm: 60,
+        large_mm: 80,
+
+        fixation_mm: 3,
+        pair_gap_mm: 15,
+
+        break_ms: 300000,
+
+        natural_asymmetry_threshold:
+          0.70
+      },
+
+      elements: [
+        instruction(
+          'ინსტრუქცია',
+          'ეკრანზე გამოჩნდება ფიგურები; ფიგურები შეიძლება იყოს ტოლი ან მათ შორის შეიძლება იყოს განსხვავება. თქვენი ამოცანაა შეადაროთ მათი ზომები ერთმანეთს, დააფიქსიროთ მცირე სხვაობაც კი და კლავიატურის შესაბამის ღილაკზე ხელის დაჭერით უპასუხოთ: თუ მარცხენაა დიდი, აჭერთ კლავიატურაზე „1“-ს; თუ ტოლია, აჭერთ „2“-ს; თუ მარჯვენაა დიდი, აჭერთ „3“-ს. ექსპერიმენტის მიმდინარეობისას უყურეთ წერტილს, რომელიც ეკრანის შუაშია მოცემული. მეორე წყვილის გამოჩენამდე უნდა მოასწროთ პირველის შეფასება და პასუხის გაცემა.'
+        ),
+
+        instruction(
+          'სავარჯიშო ცდები',
+          'ახლა შესრულდება 3 სავარჯიშო ცდა.'
+        ),
+
+        {
+          id: uid(),
+          type:
+            'fixedset_stage',
+          stage: 'practice',
+          name: 'Practice'
+        },
+
+        instruction(
+          'სავარჯიშო დასრულებულია',
+          'სავარჯიშო ნაწილი დასრულებულია. როცა მზად იქნებით, დაიწყეთ ძირითადი ექსპერიმენტი.'
+        ),
+
+        {
+          id: uid(),
+          type:
+            'fixedset_stage',
+          stage: 'control',
+          name: 'Control'
+        },
+
+        {
+          ...breakEl(
+            5,
+            '5-წუთიანი შუალედი',
+            'გადაერთეთ სხვა აქტივობაზე და ნუ უყურებთ ექსპერიმენტულ სტიმულებს.'
+          ),
+          role:
+            'control_set_break'
+        },
+
+        {
+          id: uid(),
+          type:
+            'fixedset_stage',
+          stage: 'set',
+          name:
+            'Set / Induction'
+        },
+
+        {
+          id: uid(),
+          type:
+            'fixedset_stage',
+          stage: 'critical',
+          name: 'Critical'
+        }
+      ]
+    };
+  }
+
+
+  const builtAsset = (
+    name,
+    type,
+    url,
+    extra = {}
+  ) => ({
+    name,
+    type,
+    url,
+    ...extra
+  });
+
+
+  const visualFix = () => ({
+    mode: 'red_dot',
+    size_mm: 3,
+    asset: null
+  });
+
+
+  const noFix = () => ({
+    mode: 'none',
+    size_mm: 3,
+    asset: null
+  });
+
+
+  const adaptiveBlock = (
+    name,
+    trials,
+    stimuli,
+    role = 'none',
+    save = true,
+    fixation = visualFix(),
+    exposure_ms = 1000,
+    isi_ms = 1500
+  ) => ({
+    id: uid(),
+    type: 'block',
+    name,
+    trials,
+    exposure_ms,
+    isi_ms,
+
+    response_window:
+      'until_next_stimulus',
+
+    response_window_ms:
+      exposure_ms + isi_ms,
+
+    save,
+    stimuli,
+
+    stimulus_order:
+      'sequential',
+
+    presentation:
+      'single',
+
+    pair_gap_mm:
+      15,
+
+    fixation,
+
+    instructions:
+      '',
+
+    show_instructions:
+      false,
+
+    stop_rule:
+      null,
+
+    adaptive_role:
+      role,
+
+    adaptive_direction_a_key:
+      '1',
+
+    adaptive_equal_key:
+      '2',
+
+    adaptive_direction_b_key:
+      '3',
+
+    adaptive_threshold:
+      0.70
+  });
+
+
+  function verticalLinesPreset() {
+    const eq =
+      builtAsset(
+        '01_equal_60_60.png',
+        'image/png',
+        'assets/stimuli/vertical/01_equal_60_60.png',
+        {
+          natural_width: 1200,
+          natural_height: 1000,
+          scale_mode: 'canvas',
+          width_mm: 120,
+          height_mm: 100,
+          lock_aspect: true,
+
+          reference_box: {
+            x_pct: 0,
+            y_pct: 0,
+            w_pct: 100,
+            h_pct: 100
+          }
+        }
+      );
+
+
+    const left =
+      builtAsset(
+        '02_large_left_80_40.png',
+        'image/png',
+        'assets/stimuli/vertical/02_large_left_80_40.png',
+        {
+          natural_width: 1200,
+          natural_height: 1000,
+          scale_mode: 'canvas',
+          width_mm: 120,
+          height_mm: 100,
+          lock_aspect: true,
+
+          reference_box: {
+            x_pct: 0,
+            y_pct: 0,
+            w_pct: 100,
+            h_pct: 100
+          }
+        }
+      );
+
+
+    const right =
+      builtAsset(
+        '03_large_right_40_80.png',
+        'image/png',
+        'assets/stimuli/vertical/03_large_right_40_80.png',
+        {
+          natural_width: 1200,
+          natural_height: 1000,
+          scale_mode: 'canvas',
+          width_mm: 120,
+          height_mm: 100,
+          lock_aspect: true,
+
+          reference_box: {
+            x_pct: 0,
+            y_pct: 0,
+            w_pct: 100,
+            h_pct: 100
+          }
+        }
+      );
+
+
+    const practice =
+      adaptiveBlock(
+        'Practice',
+        3,
+        [eq],
+        'none',
+        false,
+        visualFix()
+      );
+
+
+    const control =
+      adaptiveBlock(
+        'Control',
+        15,
+        [eq],
+        'control',
+        true,
+        visualFix()
+      );
+
+
+    const set =
+      adaptiveBlock(
+        'Set / Induction',
+        15,
+        [
+          left,
+          right
+        ],
+        'set',
+        true,
+        visualFix()
+      );
+
+
+    const critical =
+      adaptiveBlock(
+        'Critical',
+        40,
+        [eq],
+        'critical',
+        true,
+        visualFix()
+      );
+
+
+    critical.stop_rule = {
+      type:
+        'consecutive_response',
+      key: '2',
+      count: 10
+    };
+
+
+    return {
+      template:
+        'generic',
+
+      preset_kind:
+        'vertical_fixed_set',
+
+      responses:
+        defaultResponses(),
+
+      completion_message:
+        'ექსპერიმენტი დასრულებულია. გმადლობთ მონაწილეობისთვის.',
+
+      calibration: {
+        enabled: true,
+
+        reference_width_mm:
+          85.60,
+
+        reference_label:
+          'სტანდარტული საბანკო/ID ბარათი'
+      },
+
+      elements: [
+        instruction(
+          'ინსტრუქცია',
+          'ეკრანზე გამოჩნდება ორი ვერტიკალური ხაზი. ხაზები შეიძლება იყოს ტოლი ან მათ შორის შეიძლება იყოს განსხვავება. შეადარეთ მათი სიმაღლეები ერთმანეთს და დააფიქსირეთ მცირე სხვაობაც კი.\n\n1 — მარცხენა უფრო დიდია\n2 — ტოლია\n3 — მარჯვენა უფრო დიდია\n\nექსპერიმენტის მიმდინარეობისას უყურეთ ეკრანის შუაში მოცემულ წითელ წერტილს.'
+        ),
+
+        instruction(
+          'სავარჯიშო',
+          'ახლა დაიწყება 3 სავარჯიშო ცდა. სავარჯიშო ცდები მონაცემთა ანალიზში არ ჩაითვლება.'
+        ),
+
+        practice,
+
+        instruction(
+          'სავარჯიშო დასრულებულია',
+          'სავარჯიშო დასრულებულია. ახლა დაიწყება ექსპერიმენტის ძირითადი ნაწილი. დავალება იგივე რჩება. როცა მზად იქნებით, დააჭირეთ დაწყებას.',
+          'ექსპერიმენტის დაწყება'
+        ),
+
+        control,
+
+        breakEl(
+          5,
+          '5-წუთიანი შუალედი',
+          'გადაერთეთ სხვა აქტივობაზე და ნუ უყურებთ ექსპერიმენტულ სტიმულებს.'
+        ),
+
+        set,
+
+        critical
+      ]
+    };
+  }
+
+
+  function auditoryPreset() {
+    const eq =
+      builtAsset(
+        '01_equal_equal.wav',
+        'audio/wav',
+        'assets/stimuli/auditory/01_equal_equal.wav'
+      );
+
+
+    const loudQuiet =
+      builtAsset(
+        '02_set_loud_quiet.wav',
+        'audio/wav',
+        'assets/stimuli/auditory/02_set_loud_quiet.wav'
+      );
+
+
+    const quietLoud =
+      builtAsset(
+        '03_set_quiet_loud.wav',
+        'audio/wav',
+        'assets/stimuli/auditory/03_set_quiet_loud.wav'
+      );
+
+
+    const responses = [
+      {
+        key: '1',
+        label:
+          'პირველი უფრო ხმამაღალია'
+      },
+
+      {
+        key: '2',
+        label:
+          'თანაბრად ხმამაღალია'
+      },
+
+      {
+        key: '3',
+        label:
+          'მეორე უფრო ხმამაღალია'
+      }
+    ];
+
+
+    const practice =
+      adaptiveBlock(
+        'Practice',
+        3,
+        [eq],
+        'none',
+        false,
+        noFix(),
+        2500,
+        1500
+      );
+
+
+    const control =
+      adaptiveBlock(
+        'Control',
+        15,
+        [eq],
+        'control',
+        true,
+        noFix(),
+        2500,
+        1500
+      );
+
+
+    const set =
+      adaptiveBlock(
+        'Set / Induction',
+        15,
+        [
+          loudQuiet,
+          quietLoud
+        ],
+        'set',
+        true,
+        noFix(),
+        2500,
+        1500
+      );
+
+
+    const critical =
+      adaptiveBlock(
+        'Critical',
+        40,
+        [eq],
+        'critical',
+        true,
+        noFix(),
+        2500,
+        1500
+      );
+
+
+    critical.stop_rule = {
+      type:
+        'consecutive_response',
+      key: '2',
+      count: 10
+    };
+
+
+    return {
+      template:
+        'generic',
+
+      preset_kind:
+        'auditory_fixed_set',
+
+      responses,
+
+      completion_message:
+        'ექსპერიმენტი დასრულებულია. გმადლობთ მონაწილეობისთვის.',
+
+      calibration: {
+        enabled: false,
+
+        reference_width_mm:
+          85.60,
+
+        reference_label:
+          'სტანდარტული საბანკო/ID ბარათი'
+      },
+
+      elements: [
+        instruction(
+          'ინსტრუქცია',
+          'ყურსასმენებში მოისმენთ ერთმანეთის მიყოლებით წარმოდგენილ ორ ბგერას. ბგერები შეიძლება იყოს თანაბრად ხმამაღალი ან მათ ხმამაღლობას შორის შეიძლება იყოს განსხვავება.\n\nთქვენი ამოცანაა შეადაროთ ორი ბგერის ხმამაღლობა ერთმანეთს და დააფიქსიროთ მცირე განსხვავებაც კი.\n\n1 — პირველი ბგერა უფრო ხმამაღალია\n2 — ორივე ბგერა თანაბრად ხმამაღალია\n3 — მეორე ბგერა უფრო ხმამაღალია\n\nყურადღებით მოუსმინეთ ორივე ბგერას და მხოლოდ ამის შემდეგ დააფიქსირეთ პასუხი. ექსპერიმენტის მიმდინარეობისას არ შეცვალოთ მოწყობილობის ხმის დონე.'
+        ),
+
+        instruction(
+          'სავარჯიშო',
+          'ახლა დაიწყება სავარჯიშო ნაწილი. მოისმენთ ერთმანეთის მიყოლებით ორ ბგერას. შეადარეთ მათი ხმამაღლობა და უპასუხეთ 1, 2 ან 3 ღილაკით. სავარჯიშო ცდების შედეგები ექსპერიმენტის მონაცემებში არ ჩაითვლება.'
+        ),
+
+        practice,
+
+        instruction(
+          'სავარჯიშო დასრულებულია',
+          'სავარჯიშო დასრულებულია.\n\nახლა დაიწყება ექსპერიმენტის ძირითადი ნაწილი. დავალება იგივე რჩება:\n\n1 — პირველი ბგერა უფრო ხმამაღალია\n2 — ორივე ბგერა თანაბრად ხმამაღალია\n3 — მეორე ბგერა უფრო ხმამაღალია\n\nექსპერიმენტის განმავლობაში არ შეცვალოთ მოწყობილობის ხმის დონე.',
+          'ექსპერიმენტის დაწყება'
+        ),
+
+        control,
+
+        breakEl(
+          5,
+          '5-წუთიანი შუალედი',
+          'ექსპერიმენტის შემდეგი ნაწილი დაიწყება 5 წუთის შემდეგ. გთხოვთ, ამ დროის განმავლობაში არ შეცვალოთ მოწყობილობის ხმის დონე.'
+        ),
+
+        set,
+
+        critical
+      ]
+    };
+  }
+
+
+  function presetConfig(
+    preset
+  ) {
+    if (
+      preset === 'fixed'
+    ) {
+      return fixedSetPreset();
+    }
+
+    if (
+      preset === 'vertical'
+    ) {
+      return verticalLinesPreset();
+    }
+
+    if (
+      preset === 'auditory'
+    ) {
+      return auditoryPreset();
+    }
+
+    return {
+      template: 'generic',
+
+      responses:
+        defaultResponses(),
+
+      calibration: {
+        enabled: true,
+        reference_width_mm:
+          85.60
+      },
+
+      elements: [
+        instruction(),
+        blankBlock()
+      ],
+
+      completion_message:
+        'გმადლობთ მონაწილეობისთვის.'
+    };
+  }
+
+
+  function presetMeta(
+    preset,
+    cfg
+  ) {
+    if (
+      preset === 'fixed' ||
+      cfg?.template ===
+        'uznadze_fixed_set'
+    ) {
+      return {
+        name:
+          'Uznadze Fixed Set — Circles',
+        slug:
+          'uznadze-fixed-set-circles'
+      };
+    }
+
+
+    if (
+      preset === 'vertical' ||
+      cfg?.preset_kind ===
+        'vertical_fixed_set'
+    ) {
+      return {
+        name:
+          'Vertical Lines — Fixed Set',
+        slug:
+          'vertical-lines-fixed-set'
+      };
+    }
+
+
+    if (
+      preset === 'auditory' ||
+      cfg?.preset_kind ===
+        'auditory_fixed_set'
+    ) {
+      return {
+        name:
+          'Auditory Fixed Set',
+        slug:
+          'auditory-fixed-set'
+      };
+    }
+
+
+    return {
+      name: '',
+      slug: ''
+    };
+  }
+    /*
+    =====================================================
+    ADMIN NAVIGATION / BROWSER HISTORY
+    =====================================================
+
+    Desired behavior:
+
+    Main page
+      ↓
+    Admin / Experiments
+      ↓
+    Edit experiment
+      ↓ browser Back
+    Admin / Experiments
+      ↓ browser Back
+    Previous page / Main
+
+    The public URL can remain /admin.
+    Different Admin views are stored in history.state.
+  */
+
+
+  const ADMIN_HISTORY_KEY =
+    'cogexperiments-admin';
+
+
+  function adminState(
+    view = 'experiments',
+    arg = null
+  ) {
+    return {
+      app:
+        ADMIN_HISTORY_KEY,
+      view,
+      arg:
+        arg ?? null
+    };
+  }
+
+
+  function isAdminState(
+    state
+  ) {
+    return (
+      state &&
+      state.app ===
+        ADMIN_HISTORY_KEY
+    );
+  }
+
+
+  function currentAdminView() {
+    return isAdminState(
+      history.state
+    )
+      ? history.state.view
+      : null;
+  }
+
+
+  async function navigate(
+    view,
+    arg = null
+  ) {
+    history.pushState(
+      adminState(
+        view,
+        arg
+      ),
+      '',
+      location.href
+    );
+
+    await renderRoute(
+      view,
+      arg
+    );
+  }
+
+
+  async function replaceRoute(
+    view,
+    arg = null
+  ) {
+    history.replaceState(
+      adminState(
+        view,
+        arg
+      ),
+      '',
+      location.href
+    );
+
+    await renderRoute(
+      view,
+      arg
+    );
+  }
+
+
+  async function backToExperiments() {
+    /*
+      Edit is normally opened directly
+      from Experiments.
+
+      In that case history.back() returns
+      to the existing Experiments entry,
+      rather than creating another entry.
+    */
+
+    if (
+      currentAdminView() ===
+      'edit'
+    ) {
+      history.back();
+      return;
+    }
+
+    /*
+      For Create/Builder views we return
+      to Experiments without leaving /admin.
+    */
+
+    await replaceRoute(
+      'experiments'
+    );
+  }
+
+
+  window.addEventListener(
+    'popstate',
+    event => {
+      /*
+        If the previous history entry belongs
+        to Admin, redraw that Admin view.
+
+        If it does NOT belong to Admin,
+        the browser is naturally leaving
+        this page and we do not interfere.
+      */
+
+      if (
+        isAdminState(
+          event.state
+        )
+      ) {
+        renderRoute(
+          event.state.view,
+          event.state.arg
+        ).catch(
+          err => {
+            console.error(err);
+          }
+        );
+      }
+    }
+  );
+
+
+  async function boot() {
+    const u =
+      await CogDB.user();
+
+
+    if (
+      !u &&
+      !CogDB.demo
+    ) {
+      return auth();
+    }
+
+
+    if (
+      !CogDB.demo &&
+      !(await CogDB.admin())
+    ) {
+      return denied(u);
+    }
+
+
+    if (
+      CogDB.demo
+    ) {
+      const es =
+        await CogDB.experiments(
+          true
+        );
+
+      if (!es.length) {
+        await CogDB.saveExperiment({
+          id: uid(),
+
+          name:
+            'Uznadze Fixed Set',
+
+          slug:
+            'uznadze-fixed-set',
+
+          description:
+            'ფიქსირებული განწყობის ვიზუალური ექსპერიმენტი',
+
+          status:
+            'published',
+
+          version: 1,
+
+          config:
+            fixedSetPreset(),
+
+          created_at:
+            new Date()
+              .toISOString()
+        });
+      }
+    }
+
+
+    logout.classList.remove(
+      'hidden'
+    );
+
+
+    logout.onclick =
+      async () => {
+        await CogDB.signOut();
+        location.reload();
+      };
+
+
+    shell();
+
+
+    /*
+      First visit to /admin:
+
+      Convert the existing browser history
+      entry into the Experiments state.
+
+      IMPORTANT:
+      replaceState is used here, not pushState.
+
+      Therefore the page visited BEFORE /admin
+      remains immediately behind it.
+    */
+
+    if (
+      !isAdminState(
+        history.state
+      )
+    ) {
+      history.replaceState(
+        adminState(
+          'experiments'
+        ),
+        '',
+        location.href
+      );
+    }
+
+
+    const state =
+      history.state;
+
+
+    await renderRoute(
+      state.view ||
+        'experiments',
+
+      state.arg ?? null
+    );
+  }
+
+
+  function auth() {
+    A.innerHTML = `
+      <section class="card login">
+
+        <h2>
+          Admin login
+        </h2>
+
+        <div class="field">
+          <label>
+            Email
+          </label>
+
+          <input id="em">
+        </div>
+
+        <div class="field">
+          <label>
+            Password
+          </label>
+
+          <input
+            id="pw"
+            type="password">
+        </div>
+
+        <div
+          id="err"
+          class="alert danger hidden">
+        </div>
+
+        <button
+          id="authGo"
+          class="btn primary">
+          შესვლა
+        </button>
+
+      </section>
+    `;
+
+
+    const authGo =
+      document.getElementById(
+        'authGo'
+      );
+
+    const em =
+      document.getElementById(
+        'em'
+      );
+
+    const pw =
+      document.getElementById(
+        'pw'
+      );
+
+    const err =
+      document.getElementById(
+        'err'
+      );
+
+
+    authGo.onclick =
+      async () => {
+        try {
+          await CogDB.signIn(
+            em.value.trim(),
+            pw.value
+          );
+
+          location.reload();
+        }
+
+        catch (e) {
+          err.textContent =
+            e.message;
+
+          err.classList.remove(
+            'hidden'
+          );
+        }
+      };
+  }
+
+
+  function denied(u) {
+    A.innerHTML = `
+      <section class="card login">
+
+        <h2>
+          Access denied
+        </h2>
+
+        <p>
+          ${esc(
+            u?.email || ''
+          )}
+          არ არის Admin სიაში.
+        </p>
+
+      </section>
+    `;
+  }
+
+
+  function shell() {
+    A.innerHTML = `
+      <div class="layout">
+
+        <aside class="card sidebar">
+
+          <button
+            class="navbtn"
+            data-go="experiments">
+            Experiments
+          </button>
+
+          <button
+            class="navbtn"
+            data-go="new">
+            + Create experiment
+          </button>
+
+          <button
+            class="navbtn"
+            data-go="results">
+            Results
+          </button>
+
+          <button
+            class="navbtn"
+            data-go="setup">
+            Setup
+          </button>
+
+        </aside>
+
+        <section id="content">
+        </section>
+
+      </div>
+    `;
+
+
+    content =
+      document.getElementById(
+        'content'
+      );
+
+
+    document
+      .querySelectorAll(
+        '[data-go]'
+      )
+      .forEach(
+        b => {
+          b.onclick =
+            () =>
+              navigate(
+                b.dataset.go
+              );
+        }
+      );
+  }
+
+
+  async function renderRoute(
+    n,
+    arg = null
+  ) {
+    document
+      .querySelectorAll(
+        '.navbtn'
+      )
+      .forEach(
+        b => {
+          b.classList.toggle(
+            'active',
+
+            b.dataset.go ===
+              (
+                n === 'edit' ||
+                n === 'builder'
+                  ? 'experiments'
+                  : n
+              )
+          );
+        }
+      );
+
+
+    if (
+      n === 'experiments'
+    ) {
+      return list();
+    }
+
+
+    if (
+      n === 'new'
+    ) {
+      return chooseNew();
+    }
+
+
+    if (
+      n === 'builder'
+    ) {
+      return builder(
+        null,
+        arg
+      );
+    }
+
+
+    if (
+      n === 'edit'
+    ) {
+      return builder(
+        arg
+      );
+    }
+
+
+    if (
+      n === 'results'
+    ) {
+      return results();
+    }
+
+
+    if (
+      n === 'setup'
+    ) {
+      return setup();
+    }
+
+
+    /*
+      Unknown/invalid Admin state:
+      safely fall back to Experiments.
+    */
+
+    return replaceRoute(
+      'experiments'
+    );
+  }
+
+
+  async function list() {
+    const es =
+      await CogDB.experiments(
+        true
+      );
+
+
+    content.innerHTML = `
+      <div class="section-head">
+
+        <div>
+          <h2>
+            Experiments
+          </h2>
+
+          <p class="muted">
+            Universal image / audio / video
+            experiment builder with calibrated
+            visual stimuli.
+          </p>
+        </div>
+
+        <button
+          id="newBtn"
+          class="btn primary">
+          + Create experiment
+        </button>
+
+      </div>
+
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Participant link</th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            ${es
+              .map(
+                e => `
+                  <tr>
+
+                    <td>
+                      <b>
+                        ${esc(e.name)}
+                      </b>
+
+                      <br>
+
+                      <span class="muted">
+                        ${esc(e.slug)}
+                      </span>
+                    </td>
+
+                    <td>
+                      ${esc(e.status)}
+                    </td>
+
+                    <td>
+
+                      ${
+                        e.status ===
+                        'published'
+                          ? `
+                            <a
+                              href="run.html?exp=${encodeURIComponent(
+                                e.slug
+                              )}"
+                              target="_blank">
+                              Open
+                            </a>
+                          `
+                          : '—'
+                      }
+
+                    </td>
+
+                    <td>
+
+                      <button
+                        class="btn small"
+                        data-edit="${esc(
+                          e.id
+                        )}">
+                        Edit
+                      </button>
+
+                      <button
+                        class="btn small danger"
+                        data-delete="${esc(
+                          e.id
+                        )}">
+                        Delete
+                      </button>
+
+                    </td>
+
+                  </tr>
+                `
+              )
+              .join('')}
+
+          </tbody>
+
+        </table>
+
+      </div>
+    `;
+
+
+    const newBtn =
+      document.getElementById(
+        'newBtn'
+      );
+
+
+    newBtn.onclick =
+      () =>
+        navigate(
+          'new'
+        );
+
+
+    document
+      .querySelectorAll(
+        '[data-edit]'
+      )
+      .forEach(
+        b => {
+          b.onclick =
+            () =>
+              navigate(
+                'edit',
+                b.dataset.edit
+              );
+        }
+      );
+
+
+    document
+      .querySelectorAll(
+        '[data-delete]'
+      )
+      .forEach(
+        b => {
+          b.onclick =
+            async () => {
+              if (
+                confirm(
+                  'წავშალოთ?'
+                )
+              ) {
+                await CogDB
+                  .deleteExperiment(
+                    b.dataset.delete
+                  );
+
+                await list();
+              }
+            };
+        }
+      );
+  }
+
+
+  function chooseNew() {
+    content.innerHTML = `
+      <div class="grid two">
+
+        <button
+          class="choice-card"
+          id="blank">
+
+          <h3>
+            Blank experiment
+          </h3>
+
+          <p>
+            Universal image / audio / video
+            builder.
+          </p>
+
+        </button>
+
+
+        <button
+          class="choice-card"
+          id="fixed">
+
+          <h3>
+            Fixed Set — Circles
+          </h3>
+
+          <p>
+            Built-in calibrated
+            40/60/80 mm circles.
+          </p>
+
+        </button>
+
+
+        <button
+          class="choice-card"
+          id="vertical">
+
+          <h3>
+            Fixed Set — Vertical Lines
+          </h3>
+
+          <p>
+            Built-in calibrated
+            60/60, 80/40 and 40/80
+            line stimuli.
+          </p>
+
+        </button>
+
+
+        <button
+          class="choice-card"
+          id="auditory">
+
+          <h3>
+            Auditory Fixed Set
+          </h3>
+
+          <p>
+            Built-in verified two-tone
+            WAV stimuli with 2:1 digital
+            amplitude manipulation.
+          </p>
+
+        </button>
+
+      </div>
+    `;
+
+
+    document.getElementById(
+      'blank'
+    ).onclick =
+      () =>
+        navigate(
+          'builder',
+          'blank'
+        );
+
+
+    document.getElementById(
+      'fixed'
+    ).onclick =
+      () =>
+        navigate(
+          'builder',
+          'fixed'
+        );
+
+
+    document.getElementById(
+      'vertical'
+    ).onclick =
+      () =>
+        navigate(
+          'builder',
+          'vertical'
+        );
+
+
+    document.getElementById(
+      'auditory'
+    ).onclick =
+      () =>
+        navigate(
+          'builder',
+          'auditory'
+        );
+  }
+
+
+  async function builder(
+    id,
+    preset
+  ) {
+    const es =
+      await CogDB.experiments(
+        true
+      );
+
+
+    const old =
+      id
+        ? es.find(
+            x => x.id === id
+          )
+        : null;
+
+
+    let cfg =
+      structuredClone(
+        old?.config ||
+        presetConfig(
+          preset
+        )
+      );
+
+
+    const pm =
+      presetMeta(
+        preset,
+        cfg
+      );
+
+
+    cfg.calibration =
+      cfg.calibration || {
+        enabled: true,
+        reference_width_mm:
+          85.60
+      };
+
+
+    let responses =
+      cfg.responses ||
+      defaultResponses();
+
+
+    let elements =
+      cfg.elements || [];
+
+
+    content.innerHTML = `
+      <div class="section-head">
+
+        <div>
+
+          <h2>
+            ${
+              old
+                ? 'Edit'
+                : 'Create'
+            }
+            experiment
+          </h2>
+
+          <p class="muted">
+            Free timeline, image/audio/video stimuli,
+            calibrated visual sizing,
+            pseudorandom order and research-safe
+            response handling.
+          </p>
+
+        </div>
+
+        <span class="badge">
+          ${
+            cfg.template ===
+            'uznadze_fixed_set'
+              ? 'FIXED SET'
+              : 'GENERIC'
+          }
+        </span>
+
+      </div>
+
+
+      <div class="grid two">
+
+        <section class="card">
+
+          <h3>
+            General
+          </h3>
+
+
+          <div class="field">
+
+            <label>
+              Name
+            </label>
+
+            <input
+              id="nm"
+              value="${esc(
+                old?.name ||
+                pm.name
+              )}">
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              URL slug
+            </label>
+
+            <input
+              id="sl"
+              value="${esc(
+                old?.slug ||
+                pm.slug
+              )}">
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Description
+            </label>
+
+            <textarea id="ds">${esc(
+              old?.description ||
+              ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Completion message
+            </label>
+
+            <textarea id="cm">${esc(
+              cfg.completion_message ||
+              ''
+            )}</textarea>
+
+          </div>
+
+
+          <div class="field">
+
+            <label>
+              Status
+            </label>
+
+            <select id="st">
+
+              <option value="draft">
+                Draft
+              </option>
+
+              <option
+                value="published"
+                ${
+                  old?.status ===
+                  'published'
+                    ? 'selected'
+                    : ''
+                }>
+                Published
+              </option>
+
+              <option
+                value="archived"
+                ${
+                  old?.status ===
+                  'archived'
+                    ? 'selected'
+                    : ''
+                }>
+                Archived
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <label class="checkline">
+
+            <input
+              id="cal_enabled"
+              type="checkbox"
+              ${
+                cfg.calibration
+                  .enabled !== false
+                  ? 'checked'
+                  : ''
+              }>
+
+            Physical calibration required
+
+          </label>
+
+        </section>
+
+
+        <section class="card">
+
+          <div class="section-head">
+
+            <h3>
+              Response keys
+            </h3>
+
+            <button
+              id="addR"
+              class="btn small">
+              + Add
+            </button>
+
+          </div>
+
+          <div id="resp">
+          </div>
+
+        </section>
+
+      </div>
+
+
+      ${
+        cfg.template ===
+        'uznadze_fixed_set'
+          ? fixedHTML(
+              cfg.fixed_set
+            )
+          : ''
+      }
+
+
+      <div
+        class="section-head timeline-head">
+
+        <div>
+
+          <h2>
+            Experiment timeline
+          </h2>
+
+          <p class="muted">
+            Instruction / Block / Break —
+            შენს მიერ არჩეული რიგით.
+          </p>
+
+        </div>
+
+
+        <div class="row">
+
+          <button
+            id="addI"
+            class="btn">
+            + Instruction
+          </button>
+
+          <button
+            id="addB"
+            class="btn">
+            + Block
+          </button>
+
+          <button
+            id="addBreak"
+            class="btn">
+            + Break
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div id="elements">
+      </div>
+
+
+      <div class="row">
+
+        <button
+          id="save"
+          class="btn primary">
+          Save experiment
+        </button>
+
+        <button
+          id="cancel"
+          class="btn">
+          Cancel
+        </button>
+
+      </div>
+    `;
+
+
+    const nm =
+      document.getElementById(
+        'nm'
+      );
+
+    const sl =
+      document.getElementById(
+        'sl'
+      );
+
+    const ds =
+      document.getElementById(
+        'ds'
+      );
+
+    const cm =
+      document.getElementById(
+        'cm'
+      );
+
+    const st =
+      document.getElementById(
+        'st'
+      );
+
+    const cal_enabled =
+      document.getElementById(
+        'cal_enabled'
+      );
+
+    const addR =
+      document.getElementById(
+        'addR'
+      );
+
+    const addI =
+      document.getElementById(
+        'addI'
+      );
+
+    const addB =
+      document.getElementById(
+        'addB'
+      );
+
+    const addBreak =
+      document.getElementById(
+        'addBreak'
+      );
+
+    const cancel =
+      document.getElementById(
+        'cancel'
+      );
+
+
+    nm.oninput =
+      () => {
+        if (
+          !old &&
+          !sl.dataset.touched
+        ) {
+          sl.value =
+            slugify(
+              nm.value
+            );
+        }
+      };
+
+
+    sl.oninput =
+      () => {
+        sl.dataset.touched =
+          '1';
+      };
+
+
+    addR.onclick =
+      () => {
+        responses.push({
+          key: '',
+          label: ''
+        });
+
+        renderResponses();
+      };
+
+
+    addI.onclick =
+      () => {
+        elements.push(
+          instruction()
+        );
+
+        renderElements();
+      };
+
+
+    addB.onclick =
+      () => {
+        elements.push(
+          blankBlock(
+            `Block ${
+              elements.filter(
+                e =>
+                  e.type ===
+                  'block'
+              ).length + 1
+            }`
+          )
+        );
+
+        renderElements();
+      };
+
+
+    addBreak.onclick =
+      () => {
+        elements.push(
+          breakEl()
+        );
+
+        renderElements();
+      };
+
+
+    /*
+      IMPORTANT:
+
+      Cancel from Edit behaves the same way
+      as browser Back — it returns to
+      Experiments rather than leaving Admin.
+    */
+
+    cancel.onclick =
+      () =>
+        backToExperiments();
+        function fixedHTML(
+      fs = {}
+    ) {
+      return `
+        <section
+          class="card preset-settings">
+
+          <h3>
+            Fixed Set scientific settings
+          </h3>
+
+          <div class="inline">
+
+            <div class="field">
+              <label>
+                Practice
+              </label>
+
+              <input
+                id="fs_practice"
+                type="number"
+                min="1"
+                max="3"
+                value="${
+                  fs.practice_trials ??
+                  3
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                Control
+              </label>
+
+              <input
+                id="fs_control"
+                type="number"
+                min="15"
+                value="${
+                  fs.control_trials ??
+                  15
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                Set
+              </label>
+
+              <input
+                id="fs_set"
+                type="number"
+                value="${
+                  fs.set_trials ??
+                  15
+                }">
+            </div>
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+              <label>
+                Critical max
+              </label>
+
+              <input
+                id="fs_critical"
+                type="number"
+                max="40"
+                value="${
+                  fs.critical_max_trials ??
+                  40
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                Consecutive equal stop
+              </label>
+
+              <input
+                id="fs_stop"
+                type="number"
+                value="${
+                  fs.critical_stop_count ??
+                  10
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                Asymmetry threshold
+              </label>
+
+              <input
+                id="fs_threshold"
+                type="number"
+                step=".01"
+                value="${
+                  fs.natural_asymmetry_threshold ??
+                  0.70
+                }">
+            </div>
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+              <label>
+                Exposure ms
+              </label>
+
+              <input
+                id="fs_exposure"
+                type="number"
+                value="${
+                  fs.exposure_ms ??
+                  1000
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                ISI ms
+              </label>
+
+              <input
+                id="fs_isi"
+                type="number"
+                value="${
+                  fs.isi_ms ??
+                  1500
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                Break sec
+              </label>
+
+              <input
+                id="fs_break"
+                type="number"
+                value="${
+                  (
+                    fs.break_ms ??
+                    300000
+                  ) / 1000
+                }">
+            </div>
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+              <label>
+                Small mm
+              </label>
+
+              <input
+                id="fs_small"
+                type="number"
+                value="${
+                  fs.small_mm ??
+                  40
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                Equal mm
+              </label>
+
+              <input
+                id="fs_equal"
+                type="number"
+                value="${
+                  fs.equal_mm ??
+                  60
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                Large mm
+              </label>
+
+              <input
+                id="fs_large"
+                type="number"
+                value="${
+                  fs.large_mm ??
+                  80
+                }">
+            </div>
+
+          </div>
+
+
+          <p class="muted">
+            <b>Response window:</b>
+            stimulus onset → next stimulus onset.
+            ISI-ში დაჭერილი პასუხი წინა
+            trial-ს ეკუთვნის.
+          </p>
+
+        </section>
+      `;
+    }
+
+
+    function renderResponses() {
+      const resp =
+        document.getElementById(
+          'resp'
+        );
+
+      resp.innerHTML =
+        responses
+          .map(
+            (r, i) => `
+              <div class="row">
+
+                <input
+                  style="width:90px"
+                  data-rk="${i}"
+                  value="${esc(r.key)}">
+
+                <input
+                  style="flex:1"
+                  data-rl="${i}"
+                  value="${esc(r.label)}">
+
+                <button
+                  class="btn small"
+                  data-rd="${i}">
+                  ×
+                </button>
+
+              </div>
+
+              <br>
+            `
+          )
+          .join('');
+
+
+      document
+        .querySelectorAll(
+          '[data-rk]'
+        )
+        .forEach(
+          x => {
+            x.oninput = () => {
+              responses[
+                +x.dataset.rk
+              ].key =
+                x.value;
+            };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-rl]'
+        )
+        .forEach(
+          x => {
+            x.oninput = () => {
+              responses[
+                +x.dataset.rl
+              ].label =
+                x.value;
+            };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-rd]'
+        )
+        .forEach(
+          x => {
+            x.onclick = () => {
+              responses.splice(
+                +x.dataset.rd,
+                1
+              );
+
+              renderResponses();
+            };
+          }
+        );
+    }
+
+
+    function stimHTML(
+      s,
+      i,
+      j
+    ) {
+      const visual =
+        (s.type || '')
+          .startsWith(
+            'image/'
+          );
+
+
+      s.scale_mode =
+        s.scale_mode ||
+        'canvas';
+
+
+      s.reference_box =
+        s.reference_box || {
+          x_pct: 0,
+          y_pct: 0,
+          w_pct: 100,
+          h_pct: 100
+        };
+
+
+      const box =
+        s.reference_box;
+
+
+      const ar =
+        s.natural_width &&
+        s.natural_height
+          ? `style="aspect-ratio:${s.natural_width}/${s.natural_height};height:auto"`
+          : '';
+
+
+      return `
+        <div class="stim-card">
+
+          ${
+            visual
+              ? `
+                <div
+                  class="stim-preview-wrap"
+                  ${ar}>
+
+                  <img
+                    src="${s.url}"
+                    class="stim-preview">
+
+                  <div
+                    class="ref-box"
+                    style="
+                      left:${
+                        box.x_pct || 0
+                      }%;
+                      top:${
+                        box.y_pct || 0
+                      }%;
+                      width:${
+                        box.w_pct || 100
+                      }%;
+                      height:${
+                        box.h_pct || 100
+                      }%;
+                    ">
+                  </div>
+
+                </div>
+              `
+              : `
+                <div class="stim-file-icon">
+                  ${esc(
+                    (
+                      s.type ||
+                      'file'
+                    ).split('/')[0]
+                  )}
+                </div>
+              `
+          }
+
+
+          <div class="stim-meta">
+
+            <b>
+              ${esc(s.name)}
+            </b>
+
+
+            ${
+              visual
+                ? `
+                  <div
+                    class="field compact">
+
+                    <label>
+                      Physical scaling
+                    </label>
+
+                    <select
+                      data-stimstr="${i}:${j}"
+                      data-sk="scale_mode">
+
+                      <option
+                        value="canvas"
+                        ${
+                          s.scale_mode !==
+                          'reference_box'
+                            ? 'selected'
+                            : ''
+                        }>
+                        Whole image canvas
+                      </option>
+
+                      <option
+                        value="reference_box"
+                        ${
+                          s.scale_mode ===
+                          'reference_box'
+                            ? 'selected'
+                            : ''
+                        }>
+                        Measured object / reference box
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  <div
+                    class="stim-section ${
+                      s.scale_mode ===
+                      'reference_box'
+                        ? 'muted-panel'
+                        : ''
+                    }">
+
+                    <b>
+                      Whole canvas size
+                    </b>
+
+                    <div class="stim-dims">
+
+                      <label>
+                        Width mm
+
+                        <input
+                          type="number"
+                          step=".1"
+                          min="0"
+                          data-stim="${i}:${j}"
+                          data-sk="width_mm"
+                          value="${
+                            s.width_mm ??
+                            ''
+                          }"
+                          placeholder="auto">
+                      </label>
+
+
+                      <label>
+                        Height mm
+
+                        <input
+                          type="number"
+                          step=".1"
+                          min="0"
+                          data-stim="${i}:${j}"
+                          data-sk="height_mm"
+                          value="${
+                            s.height_mm ??
+                            ''
+                          }"
+                          placeholder="auto">
+                      </label>
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="stim-section">
+
+                    <b>
+                      Reference box inside image
+                    </b>
+
+                    <p class="muted">
+                      მონიშნე stimulus-ის ის ნაწილი,
+                      რომლის რეალური ზომაც იცი.
+                      მნიშვნელობები არის image-ის
+                      პროცენტები.
+                    </p>
+
+
+                    <div class="ref-grid">
+
+                      <label>
+                        X %
+
+                        <input
+                          type="number"
+                          step=".1"
+                          data-box="${i}:${j}"
+                          data-bk="x_pct"
+                          value="${
+                            box.x_pct ??
+                            0
+                          }">
+                      </label>
+
+
+                      <label>
+                        Y %
+
+                        <input
+                          type="number"
+                          step=".1"
+                          data-box="${i}:${j}"
+                          data-bk="y_pct"
+                          value="${
+                            box.y_pct ??
+                            0
+                          }">
+                      </label>
+
+
+                      <label>
+                        W %
+
+                        <input
+                          type="number"
+                          step=".1"
+                          min=".1"
+                          max="100"
+                          data-box="${i}:${j}"
+                          data-bk="w_pct"
+                          value="${
+                            box.w_pct ??
+                            100
+                          }">
+                      </label>
+
+
+                      <label>
+                        H %
+
+                        <input
+                          type="number"
+                          step=".1"
+                          min=".1"
+                          max="100"
+                          data-box="${i}:${j}"
+                          data-bk="h_pct"
+                          value="${
+                            box.h_pct ??
+                            100
+                          }">
+                      </label>
+
+                    </div>
+
+
+                    <div class="stim-dims">
+
+                      <label>
+                        Reference width mm
+
+                        <input
+                          type="number"
+                          step=".1"
+                          min="0"
+                          data-stim="${i}:${j}"
+                          data-sk="reference_width_mm"
+                          value="${
+                            s.reference_width_mm ??
+                            ''
+                          }"
+                          placeholder="optional">
+                      </label>
+
+
+                      <label>
+                        Reference height mm
+
+                        <input
+                          type="number"
+                          step=".1"
+                          min="0"
+                          data-stim="${i}:${j}"
+                          data-sk="reference_height_mm"
+                          value="${
+                            s.reference_height_mm ??
+                            ''
+                          }"
+                          placeholder="optional">
+                      </label>
+
+                    </div>
+
+
+                    <p class="muted">
+                      Reference Box რეჟიმში
+                      საკმარისია ერთი რეალური
+                      განზომილება
+                      (მაგ. ხაზის სიმაღლე 60 mm).
+                      image-ის დანარჩენი გეომეტრია
+                      იგივე მასშტაბით დარჩება.
+                    </p>
+
+                  </div>
+
+
+                  <label class="checkline">
+
+                    <input
+                      type="checkbox"
+                      data-stim="${i}:${j}"
+                      data-sk="lock_aspect"
+                      ${
+                        s.lock_aspect !==
+                        false
+                          ? 'checked'
+                          : ''
+                      }>
+
+                    Lock aspect ratio
+
+                  </label>
+                `
+                : ''
+            }
+
+
+            <button
+              class="btn small danger"
+              data-remstim="${i}:${j}">
+              Remove
+            </button>
+
+          </div>
+
+        </div>
+      `;
+    }
+
+
+    function elementHTML(
+      e,
+      i
+    ) {
+      const tools = `
+        <div class="element-tools">
+
+          <button
+            class="btn small"
+            data-up="${i}">
+            ↑
+          </button>
+
+          <button
+            class="btn small"
+            data-down="${i}">
+            ↓
+          </button>
+
+          <button
+            class="btn small danger"
+            data-del="${i}">
+            Remove
+          </button>
+
+        </div>
+      `;
+
+
+      if (
+        e.type ===
+        'instruction'
+      ) {
+        return `
+          <section
+            class="card element-card">
+
+            <div class="section-head">
+
+              <h3>
+                INSTRUCTION —
+                ${esc(e.title)}
+              </h3>
+
+              ${tools}
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Title
+              </label>
+
+              <input
+                data-el="${i}"
+                data-k="title"
+                value="${esc(
+                  e.title
+                )}">
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Text
+              </label>
+
+              <textarea
+                class="instruction-editor"
+                data-el="${i}"
+                data-k="text">${esc(
+                  e.text
+                )}</textarea>
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Button
+              </label>
+
+              <input
+                data-el="${i}"
+                data-k="button_text"
+                value="${esc(
+                  e.button_text ||
+                  'გაგრძელება'
+                )}">
+
+            </div>
+
+          </section>
+        `;
+      }
+
+
+      if (
+        e.type ===
+        'break'
+      ) {
+        return `
+          <section
+            class="card element-card">
+
+            <div class="section-head">
+
+              <h3>
+                BREAK —
+                ${esc(e.title)}
+              </h3>
+
+              ${tools}
+
+            </div>
+
+
+            <div class="inline">
+
+              <div class="field">
+
+                <label>
+                  Title
+                </label>
+
+                <input
+                  data-el="${i}"
+                  data-k="title"
+                  value="${esc(
+                    e.title
+                  )}">
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Duration sec
+                </label>
+
+                <input
+                  type="number"
+                  data-el="${i}"
+                  data-k="duration_sec"
+                  value="${
+                    (
+                      e.duration_ms ||
+                      0
+                    ) / 1000
+                  }">
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Button
+                </label>
+
+                <input
+                  data-el="${i}"
+                  data-k="button_text"
+                  value="${esc(
+                    e.button_text ||
+                    'გაგრძელება'
+                  )}">
+
+              </div>
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Message
+              </label>
+
+              <textarea
+                data-el="${i}"
+                data-k="text">${esc(
+                  e.text ||
+                  ''
+                )}</textarea>
+
+            </div>
+
+          </section>
+        `;
+      }
+
+
+      if (
+        e.type ===
+        'fixedset_stage'
+      ) {
+        return `
+          <section
+            class="card element-card preset-element">
+
+            <div class="section-head">
+
+              <h3>
+                FIXED SET —
+                ${esc(e.name)}
+              </h3>
+
+              ${tools}
+
+            </div>
+
+            <p class="muted">
+              Calibrated generated circles.
+              Stage:
+              ${esc(e.stage)}
+            </p>
+
+          </section>
+        `;
+      }
+
+
+      e.fixation =
+        e.fixation || {
+          mode:
+            'red_dot',
+          size_mm: 4,
+          asset: null
+        };
+
+
+      return `
+        <section
+          class="card element-card">
+
+          <div class="section-head">
+
+            <h3>
+              BLOCK —
+              ${esc(e.name)}
+            </h3>
+
+            ${tools}
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+
+              <label>
+                Name
+              </label>
+
+              <input
+                data-el="${i}"
+                data-k="name"
+                value="${esc(
+                  e.name
+                )}">
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Trials
+              </label>
+
+              <input
+                type="number"
+                data-el="${i}"
+                data-k="trials"
+                value="${
+                  e.trials || 1
+                }">
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Save
+              </label>
+
+              <select
+                data-el="${i}"
+                data-k="save">
+
+                <option
+                  value="true"
+                  ${
+                    e.save !== false
+                      ? 'selected'
+                      : ''
+                  }>
+                  Yes
+                </option>
+
+                <option
+                  value="false"
+                  ${
+                    e.save === false
+                      ? 'selected'
+                      : ''
+                  }>
+                  No
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+
+              <label>
+                Exposure ms
+              </label>
+
+              <input
+                type="number"
+                data-el="${i}"
+                data-k="exposure_ms"
+                value="${
+                  e.exposure_ms ||
+                  1000
+                }">
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                ISI ms
+              </label>
+
+              <input
+                type="number"
+                data-el="${i}"
+                data-k="isi_ms"
+                value="${
+                  e.isi_ms ||
+                  0
+                }">
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Response window
+              </label>
+
+              <select
+                data-el="${i}"
+                data-k="response_window">
+
+                <option
+                  value="until_next_stimulus"
+                  ${
+                    e.response_window ===
+                      'until_next_stimulus' ||
+                    !e.response_window
+                      ? 'selected'
+                      : ''
+                  }>
+                  Until next stimulus
+                </option>
+
+                <option
+                  value="exposure_only"
+                  ${
+                    e.response_window ===
+                    'exposure_only'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Exposure only
+                </option>
+
+                <option
+                  value="custom_ms"
+                  ${
+                    e.response_window ===
+                    'custom_ms'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Custom ms
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+
+              <label>
+                Custom response ms
+              </label>
+
+              <input
+                type="number"
+                data-el="${i}"
+                data-k="response_window_ms"
+                value="${
+                  e.response_window_ms ??
+                  (
+                    (+e.exposure_ms ||
+                      1000) +
+                    (+e.isi_ms ||
+                      0)
+                  )
+                }">
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Presentation
+              </label>
+
+              <select
+                data-el="${i}"
+                data-k="presentation">
+
+                <option
+                  value="single"
+                  ${
+                    e.presentation !==
+                    'pair'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Single / complete scene image
+                </option>
+
+                <option
+                  value="pair"
+                  ${
+                    e.presentation ===
+                    'pair'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Pair (two separate uploaded objects)
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Stimulus order
+              </label>
+
+              <select
+                data-el="${i}"
+                data-k="stimulus_order">
+
+                <option
+                  value="sequential"
+                  ${
+                    e.stimulus_order ===
+                      'sequential' ||
+                    !e.stimulus_order
+                      ? 'selected'
+                      : ''
+                  }>
+                  Sequential / uploaded order
+                </option>
+
+                <option
+                  value="random"
+                  ${
+                    e.stimulus_order ===
+                    'random'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Random
+                </option>
+
+                <option
+                  value="pseudorandom"
+                  ${
+                    e.stimulus_order ===
+                    'pseudorandom'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Pseudorandom / balanced
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+
+              <label>
+                Pair gap mm
+              </label>
+
+              <input
+                type="number"
+                step=".1"
+                data-el="${i}"
+                data-k="pair_gap_mm"
+                value="${
+                  e.pair_gap_mm ??
+                  15
+                }">
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Fixation
+              </label>
+
+              <select
+                data-fix="${i}"
+                data-fk="mode">
+
+                <option
+                  value="red_dot"
+                  ${
+                    e.fixation.mode ===
+                    'red_dot'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Red dot
+                </option>
+
+                <option
+                  value="uploaded"
+                  ${
+                    e.fixation.mode ===
+                    'uploaded'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Uploaded image
+                </option>
+
+                <option
+                  value="none"
+                  ${
+                    e.fixation.mode ===
+                    'none'
+                      ? 'selected'
+                      : ''
+                  }>
+                  None
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Fixation size mm
+              </label>
+
+              <input
+                type="number"
+                step=".1"
+                min="0"
+                data-fix="${i}"
+                data-fk="size_mm"
+                value="${
+                  e.fixation.size_mm ??
+                  4
+                }">
+
+            </div>
+
+          </div>
+
+
+          <div class="fix-upload">
+
+            <label class="btn small">
+
+              Upload fixation image
+
+              <input
+                class="hidden"
+                type="file"
+                accept="image/*"
+                data-fixupload="${i}">
+
+            </label>
+
+            ${
+              e.fixation.asset
+                ? `
+                  <span class="muted">
+                    ${esc(
+                      e.fixation.asset
+                        .name
+                    )}
+                  </span>
+
+                  <button
+                    class="btn small danger"
+                    data-fixremove="${i}">
+                    Remove
+                  </button>
+                `
+                : `
+                  <span class="muted">
+                    No custom fixation uploaded.
+                  </span>
+                `
+            }
+
+          </div>
+
+
+          <p class="muted">
+            <b>ISI:</b>
+            stimulus გაქრება; თუ fixation
+            არჩეულია, ის უწყვეტად დარჩება.
+            “Until next stimulus” რეჟიმში
+            ISI-ში დაჭერილი პასუხი მიმდინარე
+            trial-ს ეკუთვნის.
+          </p>
+
+
+          <div class="stim-section">
+
+            <b>
+              Adaptive Fixed-Set logic
+              (optional)
+            </b>
+
+
+            <div class="inline">
+
+              <div class="field">
+
+                <label>
+                  Role
+                </label>
+
+                <select
+                  data-el="${i}"
+                  data-k="adaptive_role">
+
+                  <option
+                    value="none"
+                    ${
+                      !e.adaptive_role ||
+                      e.adaptive_role ===
+                        'none'
+                        ? 'selected'
+                        : ''
+                    }>
+                    None
+                  </option>
+
+                  <option
+                    value="control"
+                    ${
+                      e.adaptive_role ===
+                      'control'
+                        ? 'selected'
+                        : ''
+                    }>
+                    Control
+                  </option>
+
+                  <option
+                    value="set"
+                    ${
+                      e.adaptive_role ===
+                      'set'
+                        ? 'selected'
+                        : ''
+                    }>
+                    Set / Induction
+                  </option>
+
+                  <option
+                    value="critical"
+                    ${
+                      e.adaptive_role ===
+                      'critical'
+                        ? 'selected'
+                        : ''
+                    }>
+                    Critical
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Direction A key
+                </label>
+
+                <input
+                  data-el="${i}"
+                  data-k="adaptive_direction_a_key"
+                  value="${esc(
+                    e.adaptive_direction_a_key ||
+                    '1'
+                  )}">
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Equal key
+                </label>
+
+                <input
+                  data-el="${i}"
+                  data-k="adaptive_equal_key"
+                  value="${esc(
+                    e.adaptive_equal_key ||
+                    '2'
+                  )}">
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Direction B key
+                </label>
+
+                <input
+                  data-el="${i}"
+                  data-k="adaptive_direction_b_key"
+                  value="${esc(
+                    e.adaptive_direction_b_key ||
+                    '3'
+                  )}">
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Threshold
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step=".01"
+                  data-el="${i}"
+                  data-k="adaptive_threshold"
+                  value="${
+                    e.adaptive_threshold ??
+                    0.70
+                  }">
+
+              </div>
+
+            </div>
+
+
+            <p class="muted">
+              Set role: upload exactly two
+              variants. Variant A = first
+              uploaded stimulus, Variant B =
+              second. Control directional
+              errors &gt; threshold choose
+              the matching variant; otherwise
+              participant-level counterbalancing
+              chooses one variant and keeps
+              it fixed for the full Set block.
+            </p>
+
+          </div>
+
+
+          <div class="stim-section">
+
+            <b>
+              Stopping rule (optional)
+            </b>
+
+
+            <div class="inline">
+
+              <div class="field">
+
+                <label>
+                  Rule
+                </label>
+
+                <select
+                  data-stop="${i}"
+                  data-sk="type">
+
+                  <option
+                    value="none"
+                    ${
+                      !e.stop_rule
+                        ? 'selected'
+                        : ''
+                    }>
+                    None
+                  </option>
+
+                  <option
+                    value="consecutive_response"
+                    ${
+                      e.stop_rule?.type ===
+                      'consecutive_response'
+                        ? 'selected'
+                        : ''
+                    }>
+                    Consecutive response
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Response key
+                </label>
+
+                <input
+                  data-stop="${i}"
+                  data-sk="key"
+                  value="${esc(
+                    e.stop_rule?.key ||
+                    '2'
+                  )}">
+
+              </div>
+
+
+              <div class="field">
+
+                <label>
+                  Count
+                </label>
+
+                <input
+                  type="number"
+                  min="1"
+                  data-stop="${i}"
+                  data-sk="count"
+                  value="${
+                    e.stop_rule?.count ||
+                    10
+                  }">
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <label class="checkline">
+
+            <input
+              type="checkbox"
+              data-el="${i}"
+              data-k="show_instructions"
+              ${
+                e.show_instructions
+                  ? 'checked'
+                  : ''
+              }>
+
+            Show block instructions
+
+          </label>
+
+
+          <textarea
+            data-el="${i}"
+            data-k="instructions">${esc(
+              e.instructions ||
+              ''
+            )}</textarea>
+
+
+          <div class="stimulus-library">
+
+            <div class="section-head">
+
+              <div>
+
+                <h4>
+                  Stimuli
+                </h4>
+
+                <p class="muted">
+                  Upload your own image/audio/video.
+                  ვერტიკალური ხაზები ან სხვა ფორმები
+                  კოდში წინასწარ ჩაშენებული არ არის.
+                </p>
+
+              </div>
+
+
+              <label class="btn">
+
+                + Upload
+
+                <input
+                  class="hidden"
+                  type="file"
+                  multiple
+                  accept="image/*,audio/*,video/*"
+                  data-upel="${i}">
+
+              </label>
+
+            </div>
+
+
+            <div class="stim-grid">
+
+              ${
+                (e.stimuli || [])
+                  .map(
+                    (s, j) =>
+                      stimHTML(
+                        s,
+                        i,
+                        j
+                      )
+                  )
+                  .join('') ||
+                `
+                  <p class="muted">
+                    No stimuli uploaded.
+                  </p>
+                `
+              }
+
+            </div>
+
+          </div>
+
+        </section>
+      `;
+    }
+
+
+    function renderElements() {
+      elements.forEach(
+        e => {
+          if (
+            e.type ===
+            'block'
+          ) {
+            e.stimuli =
+              e.stimuli || [];
+
+            e.response_window =
+              e.response_window ||
+              'until_next_stimulus';
+
+            e.presentation =
+              e.presentation ||
+              'single';
+
+            e.stimulus_order =
+              e.stimulus_order ||
+              'sequential';
+
+            e.fixation =
+              e.fixation || {
+                mode:
+                  'red_dot',
+                size_mm: 4,
+                asset: null
+              };
+
+            e.adaptive_role =
+              e.adaptive_role ||
+              'none';
+
+            e.adaptive_direction_a_key =
+              e.adaptive_direction_a_key ||
+              '1';
+
+            e.adaptive_equal_key =
+              e.adaptive_equal_key ||
+              '2';
+
+            e.adaptive_direction_b_key =
+              e.adaptive_direction_b_key ||
+              '3';
+
+            e.adaptive_threshold =
+              e.adaptive_threshold ??
+              0.70;
+          }
+        }
+      );
+
+
+      document.getElementById(
+        'elements'
+      ).innerHTML =
+        elements
+          .map(elementHTML)
+          .join('');
+
+
+      document
+        .querySelectorAll(
+          '[data-el]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              x.oninput =
+                () =>
+                  updateEl(x);
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-upel]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              async () => {
+                const i =
+                  +x.dataset.upel;
+
+                for (
+                  const f of
+                  x.files
+                ) {
+                  let a =
+                    await CogDB
+                      .uploadStimulus(
+                        f
+                      );
+
+                  a =
+                    await imageMeta(
+                      a
+                    );
+
+                  a.lock_aspect =
+                    true;
+
+                  a.scale_mode =
+                    'canvas';
+
+                  a.reference_box = {
+                    x_pct: 0,
+                    y_pct: 0,
+                    w_pct: 100,
+                    h_pct: 100
+                  };
+
+                  elements[
+                    i
+                  ].stimuli.push(
+                    a
+                  );
+                }
+
+                renderElements();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-stim]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              x.oninput =
+                () => {
+                  const [
+                    i,
+                    j
+                  ] =
+                    x.dataset.stim
+                      .split(':')
+                      .map(Number);
+
+                  const s =
+                    elements[i]
+                      .stimuli[j];
+
+                  const k =
+                    x.dataset.sk;
+
+                  s[k] =
+                    x.type ===
+                    'checkbox'
+                      ? x.checked
+                      : (
+                          x.value ===
+                          ''
+                            ? null
+                            : +x.value
+                        );
+                };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-stimstr]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              () => {
+                const [
+                  i,
+                  j
+                ] =
+                  x.dataset.stimstr
+                    .split(':')
+                    .map(Number);
+
+                elements[i]
+                  .stimuli[j][
+                    x.dataset.sk
+                  ] =
+                    x.value;
+
+                renderElements();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-box]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              x.oninput =
+                () => {
+                  const [
+                    i,
+                    j
+                  ] =
+                    x.dataset.box
+                      .split(':')
+                      .map(Number);
+
+                  const s =
+                    elements[i]
+                      .stimuli[j];
+
+                  s.reference_box =
+                    s.reference_box ||
+                    {};
+
+                  s.reference_box[
+                    x.dataset.bk
+                  ] =
+                    +x.value;
+                };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-remstim]'
+        )
+        .forEach(
+          x => {
+            x.onclick =
+              () => {
+                const [
+                  i,
+                  j
+                ] =
+                  x.dataset.remstim
+                    .split(':')
+                    .map(Number);
+
+                elements[i]
+                  .stimuli.splice(
+                    j,
+                    1
+                  );
+
+                renderElements();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-fix]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              x.oninput =
+                () => {
+                  const e =
+                    elements[
+                      +x.dataset.fix
+                    ];
+
+                  e.fixation =
+                    e.fixation ||
+                    {};
+
+                  e.fixation[
+                    x.dataset.fk
+                  ] =
+                    x.dataset.fk ===
+                    'size_mm'
+                      ? +x.value
+                      : x.value;
+                };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-fixupload]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              async () => {
+                const i =
+                  +x.dataset
+                    .fixupload;
+
+                const f =
+                  x.files?.[0];
+
+                if (!f) {
+                  return;
+                }
+
+                elements[i]
+                  .fixation =
+                    elements[i]
+                      .fixation ||
+                    {};
+
+                elements[i]
+                  .fixation
+                  .asset =
+                    await imageMeta(
+                      await CogDB
+                        .uploadStimulus(
+                          f
+                        )
+                    );
+
+                elements[i]
+                  .fixation
+                  .mode =
+                    'uploaded';
+
+                renderElements();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-fixremove]'
+        )
+        .forEach(
+          x => {
+            x.onclick =
+              () => {
+                const e =
+                  elements[
+                    +x.dataset
+                      .fixremove
+                  ];
+
+                e.fixation.asset =
+                  null;
+
+                if (
+                  e.fixation.mode ===
+                  'uploaded'
+                ) {
+                  e.fixation.mode =
+                    'red_dot';
+                }
+
+                renderElements();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-stop]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              x.oninput =
+                () => {
+                  const e =
+                    elements[
+                      +x.dataset.stop
+                    ];
+
+                  const k =
+                    x.dataset.sk;
+
+                  if (
+                    k === 'type'
+                  ) {
+                    e.stop_rule =
+                      x.value ===
+                      'none'
+                        ? null
+                        : {
+                            type:
+                              'consecutive_response',
+                            key:
+                              e.stop_rule
+                                ?.key ||
+                              '2',
+                            count:
+                              e.stop_rule
+                                ?.count ||
+                              10
+                          };
+
+                    renderElements();
+                  }
+
+                  else {
+                    e.stop_rule =
+                      e.stop_rule || {
+                        type:
+                          'consecutive_response',
+                        key: '2',
+                        count: 10
+                      };
+
+                    e.stop_rule[k] =
+                      k === 'count'
+                        ? +x.value
+                        : x.value;
+                  }
+                };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-del]'
+        )
+        .forEach(
+          x => {
+            x.onclick =
+              () => {
+                elements.splice(
+                  +x.dataset.del,
+                  1
+                );
+
+                renderElements();
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-up]'
+        )
+        .forEach(
+          x => {
+            x.onclick =
+              () => {
+                const i =
+                  +x.dataset.up;
+
+                if (i) {
+                  [
+                    elements[
+                      i - 1
+                    ],
+                    elements[i]
+                  ] = [
+                    elements[i],
+                    elements[
+                      i - 1
+                    ]
+                  ];
+
+                  renderElements();
+                }
+              };
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-down]'
+        )
+        .forEach(
+          x => {
+            x.onclick =
+              () => {
+                const i =
+                  +x.dataset.down;
+
+                if (
+                  i <
+                  elements.length -
+                    1
+                ) {
+                  [
+                    elements[
+                      i + 1
+                    ],
+                    elements[i]
+                  ] = [
+                    elements[i],
+                    elements[
+                      i + 1
+                    ]
+                  ];
+
+                  renderElements();
+                }
+              };
+          }
+        );
+    }
+
+
+    function updateEl(x) {
+      const e =
+        elements[
+          +x.dataset.el
+        ];
+
+      const k =
+        x.dataset.k;
+
+
+      if (
+        k ===
+        'show_instructions'
+      ) {
+        e[k] =
+          x.checked;
+      }
+
+      else if (
+        [
+          'trials',
+          'exposure_ms',
+          'isi_ms',
+          'pair_gap_mm',
+          'response_window_ms',
+          'adaptive_threshold'
+        ].includes(k)
+      ) {
+        e[k] =
+          +x.value;
+      }
+
+      else if (
+        k ===
+        'duration_sec'
+      ) {
+        e.duration_ms =
+          +x.value *
+          1000;
+      }
+
+      else if (
+        k === 'save'
+      ) {
+        e.save =
+          x.value ===
+          'true';
+      }
+
+      else {
+        e[k] =
+          x.value;
+      }
+    }
+
+
+    function validateFixed() {
+      const si =
+        elements.findIndex(
+          e =>
+            e.type ===
+              'fixedset_stage' &&
+            e.stage ===
+              'set'
+        );
+
+
+      const ci =
+        elements.findIndex(
+          e =>
+            e.type ===
+              'fixedset_stage' &&
+            e.stage ===
+              'critical'
+        );
+
+
+      if (
+        si < 0 ||
+        ci !== si + 1
+      ) {
+        throw Error(
+          'Fixed Set: Set → Critical უნდა იყოს უშუალო.'
+        );
+      }
+
+
+      const fs_practice =
+        document.getElementById(
+          'fs_practice'
+        );
+
+      const fs_control =
+        document.getElementById(
+          'fs_control'
+        );
+
+      const fs_critical =
+        document.getElementById(
+          'fs_critical'
+        );
+
+      const fs_break =
+        document.getElementById(
+          'fs_break'
+        );
+
+      const fs_exposure =
+        document.getElementById(
+          'fs_exposure'
+        );
+
+
+      if (
+        +fs_practice.value >
+          3 ||
+        +fs_control.value <
+          15 ||
+        +fs_critical.value >
+          40 ||
+        +fs_break.value <
+          300 ||
+        +fs_exposure.value <
+          500
+      ) {
+        throw Error(
+          'Fixed Set scientific settings არ შეესაბამება მინიმალურ პროტოკოლურ საზღვრებს.'
+        );
+      }
+    }
+
+
+    const save =
+      document.getElementById(
+        'save'
+      );
+
+
+    save.onclick =
+      async () => {
+        try {
+          if (
+            !nm.value.trim() ||
+            !sl.value.trim()
+          ) {
+            throw Error(
+              'Name და slug აუცილებელია.'
+            );
+          }
+
+
+          cfg.responses =
+            responses.filter(
+              r => r.key
+            );
+
+
+          cfg.elements =
+            elements;
+
+
+          cfg.completion_message =
+            cm.value;
+
+
+          cfg.calibration = {
+            enabled:
+              cal_enabled.checked,
+
+            reference_width_mm:
+              85.60,
+
+            reference_label:
+              'სტანდარტული საბანკო/ID ბარათი'
+          };
+
+
+          if (
+            cfg.template ===
+            'uznadze_fixed_set'
+          ) {
+            validateFixed();
+
+
+            const fs_practice =
+              document.getElementById(
+                'fs_practice'
+              );
+
+            const fs_control =
+              document.getElementById(
+                'fs_control'
+              );
+
+            const fs_set =
+              document.getElementById(
+                'fs_set'
+              );
+
+            const fs_critical =
+              document.getElementById(
+                'fs_critical'
+              );
+
+            const fs_stop =
+              document.getElementById(
+                'fs_stop'
+              );
+
+            const fs_threshold =
+              document.getElementById(
+                'fs_threshold'
+              );
+
+            const fs_exposure =
+              document.getElementById(
+                'fs_exposure'
+              );
+
+            const fs_isi =
+              document.getElementById(
+                'fs_isi'
+              );
+
+            const fs_break =
+              document.getElementById(
+                'fs_break'
+              );
+
+            const fs_small =
+              document.getElementById(
+                'fs_small'
+              );
+
+            const fs_equal =
+              document.getElementById(
+                'fs_equal'
+              );
+
+            const fs_large =
+              document.getElementById(
+                'fs_large'
+              );
+
+
+            cfg.fixed_set = {
+              ...cfg.fixed_set,
+
+              practice_trials:
+                +fs_practice.value,
+
+              control_trials:
+                +fs_control.value,
+
+              set_trials:
+                +fs_set.value,
+
+              critical_max_trials:
+                +fs_critical.value,
+
+              critical_stop_count:
+                +fs_stop.value,
+
+              critical_stop_key:
+                '2',
+
+              natural_asymmetry_threshold:
+                +fs_threshold.value,
+
+              exposure_ms:
+                +fs_exposure.value,
+
+              isi_ms:
+                +fs_isi.value,
+
+              response_window:
+                'until_next_stimulus',
+
+              break_ms:
+                +fs_break.value *
+                1000,
+
+              small_mm:
+                +fs_small.value,
+
+              equal_mm:
+                +fs_equal.value,
+
+              large_mm:
+                +fs_large.value
+            };
+
+
+            const be =
+              elements.find(
+                e =>
+                  e.role ===
+                  'control_set_break'
+              );
+
+
+            if (be) {
+              be.duration_ms =
+                cfg.fixed_set
+                  .break_ms;
+            }
+          }
+
+
+          await CogDB
+            .saveExperiment({
+              id:
+                old?.id ||
+                uid(),
+
+              name:
+                nm.value.trim(),
+
+              slug:
+                sl.value.trim(),
+
+              description:
+                ds.value.trim(),
+
+              status:
+                st.value,
+
+              version:
+                (
+                  old?.version ||
+                  0
+                ) + 1,
+
+              config:
+                cfg,
+
+              created_at:
+                old?.created_at ||
+                new Date()
+                  .toISOString()
+            });
+
+
+          /*
+            After Save:
+
+            Edit -> return to the previous
+            Experiments history state.
+
+            Create/Builder -> render
+            Experiments inside Admin.
+          */
+
+          await backToExperiments();
+        }
+
+        catch (e) {
+          alert(
+            e.message
+          );
+        }
+      };
+
+
+    renderResponses();
+    renderElements();
+  }
+
+
+  async function results() {
+    const es =
+      await CogDB.experiments(
+        true
+      );
+
+
+    content.innerHTML = `
+      <section class="card">
+
+        <div class="row">
+
+          <select id="rex">
+
+            <option value="">
+              All experiments
+            </option>
+
+            ${es
+              .map(
+                e => `
+                  <option
+                    value="${e.id}">
+                    ${esc(e.name)}
+                  </option>
+                `
+              )
+              .join('')}
+
+          </select>
+
+
+          <button
+            id="load"
+            class="btn">
+            Load
+          </button>
+
+
+          <button
+            id="xlsx"
+            class="btn primary">
+            Export Excel
+          </button>
+
+        </div>
+
+
+        <div id="rout">
+        </div>
+
+      </section>
+    `;
+
+
+    const rex =
+      document.getElementById(
+        'rex'
+      );
+
+    const load =
+      document.getElementById(
+        'load'
+      );
+
+    const xlsx =
+      document.getElementById(
+        'xlsx'
+      );
+
+    const rout =
+      document.getElementById(
+        'rout'
+      );
+
+
+    let data = {
+      sessions: [],
+      trials: []
+    };
+
+
+    async function refresh() {
+      data =
+        await CogDB.results(
+          rex.value
+        );
+
+      rout.innerHTML = `
+        <p>
+          <b>
+            ${
+              data.sessions
+                .length
+            }
+          </b>
+          participants ·
+
+          <b>
+            ${
+              data.trials
+                .length
+            }
+          </b>
+          saved trials
+        </p>
+      `;
+    }
+
+
+    load.onclick =
+      refresh;
+
+
+    xlsx.onclick =
+      () =>
+        exportExcel(
+          data,
+          es.find(
+            e =>
+              e.id ===
+              rex.value
+          )
+        );
+
+
+    await refresh();
+  }
+
+
+  function exportExcel(
+    data,
+    exp
+  ) {
+    if (
+      !window.XLSX
+    ) {
+      return alert(
+        'Excel unavailable'
+      );
+    }
+
+
+    const by =
+      new Map();
+
+
+    data.trials.forEach(
+      t => {
+        if (
+          !by.has(
+            t.session_id
+          )
+        ) {
+          by.set(
+            t.session_id,
+            []
+          );
+        }
+
+        by.get(
+          t.session_id
+        ).push(t);
+      }
+    );
+
+
+    const blocks = [
+      ...new Set(
+        data.trials.map(
+          t =>
+            t.block_name
+        )
+      )
+    ];
+
+
+    const keys = [
+      ...new Set([
+        ...(
+          exp?.config
+            ?.responses ||
+          []
+        ).map(
+          r => r.key
+        ),
+
+        ...data.trials
+          .map(
+            t =>
+              t.response_key
+          )
+          .filter(Boolean)
+      ])
+    ];
+
+
+    const ps =
+      data.sessions.map(
+        s => {
+          const ts =
+            by.get(s.id) ||
+            [];
+
+
+          const r = {
+            Participant:
+              s.participant_code,
+
+            Completed:
+              s.completed_at
+                ? 'Yes'
+                : 'No',
+
+            Validity:
+              s.validity_status ||
+              ''
+          };
+
+
+          for (
+            const b of blocks
+          ) {
+            const bt =
+              ts.filter(
+                t =>
+                  t.block_name ===
+                  b
+              );
+
+
+            const miss =
+              bt.filter(
+                t => t.missing
+              ).length;
+
+
+            r[`${b} N`] =
+              bt.length;
+
+
+            for (
+              const k of keys
+            ) {
+              const n =
+                bt.filter(
+                  t =>
+                    t.response_key ===
+                    k
+                ).length;
+
+
+              r[
+                `${b} ${k}`
+              ] = n;
+
+
+              r[
+                `${b} ${k} %`
+              ] =
+                bt.length
+                  ? +(
+                      100 *
+                      n /
+                      bt.length
+                    ).toFixed(1)
+                  : 0;
+            }
+
+
+            r[
+              `${b} Sequence`
+            ] =
+              bt.map(
+                t =>
+                  t.response_key ||
+                  'MISSING'
+              ).join(',');
+
+
+            r[
+              `${b} Missing`
+            ] =
+              miss;
+
+
+            r[
+              `${b} Missing %`
+            ] =
+              bt.length
+                ? +(
+                    100 *
+                    miss /
+                    bt.length
+                  ).toFixed(1)
+                : 0;
+
+
+            r[
+              `${b} Extra keypresses`
+            ] =
+              bt.reduce(
+                (n, t) =>
+                  n +
+                  (
+                    t.metadata
+                      ?.extra_keypress_count ||
+                    0
+                  ),
+                0
+              );
+          }
+
+
+          Object.assign(
+            r,
+            s.summary ||
+            {}
+          );
+
+
+          return r;
+        }
+      );
+
+
+    const tr =
+      data.trials.map(
+        t => ({
+          Participant:
+            t.participant_code,
+
+          Block:
+            t.block_name,
+
+          Global_Trial:
+            t.global_trial,
+
+          Block_Trial:
+            t.block_trial,
+
+          Stimulus:
+            t.stimulus_name,
+
+          Stimulus_Type:
+            t.stimulus_type,
+
+          Response_Key:
+            t.response_key ||
+            '',
+
+          Response_Label:
+            t.response_label ||
+            '',
+
+          RT_ms:
+            t.rt_ms,
+
+          Missing:
+            t.missing
+              ? 'TRUE'
+              : 'FALSE',
+
+          Response_During:
+            t.metadata
+              ?.response_during ||
+            '',
+
+          Extra_Keypress_Count:
+            t.metadata
+              ?.extra_keypress_count ||
+            0,
+
+          Extra_Keypresses:
+            JSON.stringify(
+              t.metadata
+                ?.extra_keypresses ||
+              []
+            ),
+
+          Stimulus_Order:
+            t.metadata
+              ?.stimulus_order ||
+            '',
+
+          Adaptive_Role:
+            t.metadata
+              ?.adaptive_role ||
+            '',
+
+          Adaptive_Asymmetry:
+            t.metadata
+              ?.adaptive_asymmetry ||
+            '',
+
+          Adaptive_Set_Variant:
+            t.metadata
+              ?.adaptive_set_variant ??
+            '',
+
+          Metadata:
+            JSON.stringify(
+              t.metadata ||
+              {}
+            )
+        })
+      );
+
+
+    const settings = [];
+
+
+    if (exp) {
+      settings.push(
+        {
+          Setting:
+            'Name',
+          Value:
+            exp.name
+        },
+        {
+          Setting:
+            'Version',
+          Value:
+            exp.version
+        },
+        {
+          Setting:
+            'Template',
+          Value:
+            exp.config?.template
+        },
+        {
+          Setting:
+            'Calibration required',
+          Value:
+            exp.config
+              ?.calibration
+              ?.enabled
+                ? 'Yes'
+                : 'No'
+        }
+      );
+
+
+      (
+        exp.config
+          ?.responses ||
+        []
+      ).forEach(
+        (r, i) =>
+          settings.push({
+            Setting:
+              `Response ${
+                i + 1
+              }`,
+
+            Value:
+              `${r.key} = ${r.label}`
+          })
+      );
+
+
+      (
+        exp.config
+          ?.elements ||
+        []
+      ).forEach(
+        (e, i) => {
+          settings.push({
+            Setting:
+              `Timeline ${
+                i + 1
+              }`,
+
+            Value:
+              `${e.type}: ${
+                e.title ||
+                e.name ||
+                e.stage ||
+                ''
+              }`
+          });
+
+
+          if (
+            e.type ===
+            'block'
+          ) {
+            settings.push(
+              {
+                Setting:
+                  `${e.name} trials`,
+                Value:
+                  e.trials
+              },
+
+              {
+                Setting:
+                  `${e.name} exposure ms`,
+                Value:
+                  e.exposure_ms
+              },
+
+              {
+                Setting:
+                  `${e.name} ISI ms`,
+                Value:
+                  e.isi_ms
+              },
+
+              {
+                Setting:
+                  `${e.name} order`,
+                Value:
+                  e.stimulus_order
+              },
+
+              {
+                Setting:
+                  `${e.name} adaptive role`,
+                Value:
+                  e.adaptive_role ||
+                  'none'
+              },
+
+              {
+                Setting:
+                  `${e.name} stop rule`,
+                Value:
+                  e.stop_rule
+                    ? JSON.stringify(
+                        e.stop_rule
+                      )
+                    : 'none'
+              }
+            );
+          }
+        }
+      );
+    }
+
+
+    const wb =
+      XLSX.utils
+        .book_new();
+
+
+    XLSX.utils
+      .book_append_sheet(
+        wb,
+        XLSX.utils
+          .json_to_sheet(ps),
+        'Participants'
+      );
+
+
+    XLSX.utils
+      .book_append_sheet(
+        wb,
+        XLSX.utils
+          .json_to_sheet(tr),
+        'Trial_Data'
+      );
+
+
+    XLSX.utils
+      .book_append_sheet(
+        wb,
+        XLSX.utils
+          .json_to_sheet(
+            settings
+          ),
+        'Experiment_Settings'
+      );
+
+
+    XLSX.writeFile(
+      wb,
+      `${
+        exp?.slug ||
+        'cogexperiments'
+      }_results.xlsx`
+    );
+  }
+
+
+  function setup() {
+    content.innerHTML = `
+      <section class="card">
+
+        <h3>
+          ${
+            CogDB.demo
+              ? 'Demo Mode'
+              : 'Supabase connected'
+          }
+        </h3>
+
+        <p>
+          Build:
+          ${esc(
+            COG_CONFIG.BUILD
+          )}
+        </p>
+
+      </section>
+    `;
+  }
+
+
+  boot().catch(
+    e => {
+      console.error(e);
+
+      A.innerHTML = `
+        <div class="alert danger">
+          ${esc(
+            e.message
+          )}
+        </div>
+      `;
+    }
+  );
+
 })();
