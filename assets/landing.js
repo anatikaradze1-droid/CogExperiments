@@ -1,5 +1,8 @@
 (() => {
-  const $ = id => document.getElementById(id);
+
+  const $ = id =>
+    document.getElementById(id);
+
 
   const esc = value =>
     String(value ?? '').replace(
@@ -13,58 +16,82 @@
       }[c])
     );
 
-  const list = $('experimentList');
-  const search = $('experimentSearch');
+
+  const list =
+    $('experimentList');
+
+  const search =
+    $('experimentSearch');
+
+  const page =
+    document.body.dataset.page || 'home';
+
 
   let studies = [];
 
+  let visibleStudies = [];
+
 
   const classify = exp => {
-    const s =
+
+    const text =
       `${exp.name || ''} ${exp.description || ''} ${exp.slug || ''}`
         .toLowerCase();
 
+
     if (
-      s.includes('auditory') ||
-      s.includes('audio') ||
-      s.includes('sound')
+      text.includes('auditory') ||
+      text.includes('audio') ||
+      text.includes('sound')
     ) {
+
       return {
         kind: 'auditory',
         category: 'AUDITORY PERCEPTION'
       };
+
     }
 
+
     if (
-      s.includes('vertical') ||
-      s.includes('line')
+      text.includes('vertical') ||
+      text.includes('line')
     ) {
+
       return {
         kind: 'visual',
         category: 'VISUAL PERCEPTION'
       };
+
     }
 
+
     if (
-      s.includes('uznadze') ||
-      s.includes('circle') ||
-      s.includes('fixed set')
+      text.includes('uznadze') ||
+      text.includes('circle') ||
+      text.includes('fixed set')
     ) {
+
       return {
         kind: 'fixedset',
         category: 'PERCEPTION · FIXED SET'
       };
+
     }
+
 
     return {
       kind: 'general',
       category: 'COGNITIVE EXPERIMENT'
     };
+
   };
 
 
   const visualMarkup = kind => {
+
     if (kind === 'auditory') {
+
       return `
         <div class="audio-visual">
           <i></i>
@@ -78,9 +105,12 @@
           <i></i>
         </div>
       `;
+
     }
 
+
     if (kind === 'visual') {
+
       return `
         <div class="line-visual">
           <i></i>
@@ -92,13 +122,18 @@
           <i></i>
         </div>
       `;
+
     }
 
+
     if (kind === 'fixedset') {
+
       return `
         <div class="circle-visual"></div>
       `;
+
     }
+
 
     return `
       <div class="general-visual">
@@ -107,29 +142,42 @@
         <i></i>
       </div>
     `;
+
   };
 
 
   function renderStudies(rows) {
-    if (!list) return;
 
-    if (!rows.length) {
-      list.innerHTML = `
-        <div class="empty-card">
-          ამჟამად ამ ძიებას შესაბამისი გამოქვეყნებული
-          ექსპერიმენტი არ მოიძებნა.
-        </div>
-      `;
+    if (!list) {
       return;
     }
 
-    list.innerHTML = rows
-      .map(exp => {
-        const meta = classify(exp);
+
+    if (!rows.length) {
+
+      list.innerHTML = `
+        <div class="empty-card">
+          ამ ძიებას შესაბამისი გამოქვეყნებული
+          კვლევა არ მოიძებნა.
+        </div>
+      `;
+
+      return;
+
+    }
+
+
+    list.innerHTML =
+      rows.map(exp => {
+
+        const meta =
+          classify(exp);
+
 
         const description =
           exp.description ||
           'კვლევის მოკლე აღწერა ჯერ არ არის მითითებული.';
+
 
         return `
           <article
@@ -141,39 +189,63 @@
               ${visualMarkup(meta.kind)}
             </div>
 
+
             <div class="study-body">
 
               <div class="study-category">
                 ${meta.category}
               </div>
 
+
               <h3>
                 ${esc(exp.name)}
               </h3>
 
+
               <p class="study-description">
                 ${esc(description)}
               </p>
+
 
               <a
                 class="study-action"
                 href="run.html?exp=${encodeURIComponent(exp.slug)}"
               >
                 კვლევაში მონაწილეობა
-                <span aria-hidden="true">→</span>
+
+                <span aria-hidden="true">
+                  →
+                </span>
               </a>
 
             </div>
 
           </article>
         `;
-      })
-      .join('');
+
+      }).join('');
+
+  };
+
+
+  function studiesForCurrentPage() {
+
+    if (page === 'research') {
+      return [...studies];
+    }
+
+
+    return studies.slice(0, 3);
+
   }
 
 
   async function loadExperiments() {
-    if (!list) return;
+
+    if (!list) {
+      return;
+    }
+
 
     list.innerHTML = `
       <div class="loading-card">
@@ -181,18 +253,37 @@
       </div>
     `;
 
+
     try {
-      const rows = await CogDB.experiments(false);
 
-      studies = Array.isArray(rows)
-        ? rows.filter(exp => exp.status === 'published')
-        : [];
+      const rows =
+        await CogDB.experiments(false);
 
-      renderStudies(studies);
+
+      studies =
+        Array.isArray(rows)
+          ? rows.filter(
+              exp =>
+                !exp.status ||
+                exp.status === 'published'
+            )
+          : [];
+
+
+      visibleStudies =
+        studiesForCurrentPage();
+
+
+      renderStudies(
+        visibleStudies
+      );
+
     }
 
     catch (error) {
+
       console.error(error);
+
 
       list.innerHTML = `
         <div class="empty-card">
@@ -200,32 +291,55 @@
           ${esc(error.message)}
         </div>
       `;
+
     }
+
   }
 
 
   if (search) {
-    search.addEventListener('input', () => {
-      const q =
-        search.value
-          .trim()
-          .toLowerCase();
 
-      if (!q) {
-        renderStudies(studies);
-        return;
-      }
+    search.addEventListener(
+      'input',
+      () => {
 
-      const filtered = studies.filter(exp => {
-        const text =
-          `${exp.name || ''} ${exp.description || ''} ${exp.slug || ''}`
+        const q =
+          search.value
+            .trim()
             .toLowerCase();
 
-        return text.includes(q);
-      });
 
-      renderStudies(filtered);
-    });
+        if (!q) {
+
+          renderStudies(
+            visibleStudies
+          );
+
+          return;
+
+        }
+
+
+        const filtered =
+          visibleStudies.filter(exp => {
+
+            const text =
+              `${exp.name || ''} ${exp.description || ''} ${exp.slug || ''}`
+                .toLowerCase();
+
+
+            return text.includes(q);
+
+          });
+
+
+        renderStudies(
+          filtered
+        );
+
+      }
+    );
+
   }
 
 
