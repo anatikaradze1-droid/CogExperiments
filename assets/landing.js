@@ -8,11 +8,11 @@
     String(value ?? '').replace(
       /[&<>"']/g,
       c => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;',
+        "'":'&#39;'
       }[c])
     );
 
@@ -23,8 +23,10 @@
   const search =
     $('experimentSearch');
 
+
   const page =
-    document.body.dataset.page || 'home';
+    document.body.dataset.page ||
+    'home';
 
 
   let studies = [];
@@ -46,8 +48,8 @@
     ) {
 
       return {
-        kind: 'auditory',
-        category: 'AUDITORY PERCEPTION'
+        kind:'auditory',
+        category:'AUDITORY PERCEPTION'
       };
 
     }
@@ -59,8 +61,8 @@
     ) {
 
       return {
-        kind: 'visual',
-        category: 'VISUAL PERCEPTION'
+        kind:'visual',
+        category:'VISUAL PERCEPTION'
       };
 
     }
@@ -73,16 +75,16 @@
     ) {
 
       return {
-        kind: 'fixedset',
-        category: 'PERCEPTION · FIXED SET'
+        kind:'fixedset',
+        category:'PERCEPTION · FIXED SET'
       };
 
     }
 
 
     return {
-      kind: 'general',
-      category: 'COGNITIVE EXPERIMENT'
+      kind:'general',
+      category:'COGNITIVE EXPERIMENT'
     };
 
   };
@@ -209,9 +211,9 @@
 
               <a
                 class="study-action"
-                href="run.html?exp=${encodeURIComponent(exp.slug)}"
+                href="study.html?exp=${encodeURIComponent(exp.slug)}"
               >
-                კვლევაში მონაწილეობა
+                კვლევის ნახვა
 
                 <span aria-hidden="true">
                   →
@@ -225,7 +227,7 @@
 
       }).join('');
 
-  };
+  }
 
 
   function studiesForCurrentPage() {
@@ -235,7 +237,7 @@
     }
 
 
-    return studies.slice(0, 3);
+    return studies.slice(0,3);
 
   }
 
@@ -265,7 +267,8 @@
           ? rows.filter(
               exp =>
                 !exp.status ||
-                exp.status === 'published'
+                exp.status ===
+                'published'
             )
           : [];
 
@@ -321,16 +324,18 @@
 
 
         const filtered =
-          visibleStudies.filter(exp => {
+          visibleStudies.filter(
+            exp => {
 
-            const text =
-              `${exp.name || ''} ${exp.description || ''} ${exp.slug || ''}`
-                .toLowerCase();
+              const text =
+                `${exp.name || ''} ${exp.description || ''} ${exp.slug || ''}`
+                  .toLowerCase();
 
 
-            return text.includes(q);
+              return text.includes(q);
 
-          });
+            }
+          );
 
 
         renderStudies(
@@ -344,8 +349,9 @@
 
 
   loadExperiments()
-    .catch(error => {
-      console.error(error);
-    });
+    .catch(
+      error =>
+        console.error(error)
+    );
 
 })();
