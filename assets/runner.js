@@ -1487,28 +1487,72 @@
     if (
       stage === 'set'
     ) {
-      setSide =
-        determineSetSide();
-
       const n =
         Number(
           f.set_trials
         ) || 15;
 
+      const setOrder =
+        f.set_stimulus_order ||
+        'balanced_pseudorandom';
+
+      let setPlan = [];
+
+      if (
+        setOrder ===
+        'fixed_left'
+      ) {
+        setPlan =
+          Array(n).fill(0);
+      }
+
+      else if (
+        setOrder ===
+        'fixed_right'
+      ) {
+        setPlan =
+          Array(n).fill(1);
+      }
+
+      else {
+        setPlan =
+          balancedPseudoIndices(
+            2,
+            n,
+            seedFrom(
+              `${session.participant_code}|${exp.id}|fixed-set-circles|set`
+            )
+          );
+      }
+
+      setSide =
+        setOrder ===
+          'fixed_left'
+          ? 'left'
+          : setOrder ===
+            'fixed_right'
+            ? 'right'
+            : 'pseudorandom';
+
       for (
         let i = 1;
         i <= n;
         i++
-              ) {
+      ) {
+        const trialSetSide =
+          setPlan[i - 1] === 1
+            ? 'right'
+            : 'left';
+
         await circleTrial(
           'Set / Induction',
           i,
 
-          setSide === 'left'
+          trialSetSide === 'left'
             ? f.large_mm
             : f.small_mm,
 
-          setSide === 'right'
+          trialSetSide === 'right'
             ? f.large_mm
             : f.small_mm,
 
@@ -1517,7 +1561,11 @@
           {
             stage,
             set_side:
-              setSide
+              trialSetSide,
+            set_stimulus_order:
+              setOrder,
+            set_variant_index:
+              setPlan[i - 1]
           }
         );
       }
