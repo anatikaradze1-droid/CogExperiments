@@ -299,6 +299,9 @@
         fixation_mm: 3,
         pair_gap_mm: 15,
 
+        set_stimulus_order:
+          'balanced_pseudorandom',
+
         break_ms: 300000,
 
         natural_asymmetry_threshold:
@@ -3618,6 +3621,108 @@
 
             <div class="field">
               <label>
+                Set variation order
+              </label>
+
+              <select id="fs_set_order">
+                <option
+                  value="balanced_pseudorandom"
+                  ${
+                    (
+                      fs.set_stimulus_order ||
+                      'balanced_pseudorandom'
+                    ) ===
+                    'balanced_pseudorandom'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Balanced pseudorandom
+                </option>
+
+                <option
+                  value="fixed_left"
+                  ${
+                    fs.set_stimulus_order ===
+                    'fixed_left'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Fixed — large left
+                </option>
+
+                <option
+                  value="fixed_right"
+                  ${
+                    fs.set_stimulus_order ===
+                    'fixed_right'
+                      ? 'selected'
+                      : ''
+                  }>
+                  Fixed — large right
+                </option>
+              </select>
+            </div>
+
+
+            <div class="field">
+              <label>
+                Critical stop key
+              </label>
+
+              <input
+                id="fs_stop_key"
+                type="text"
+                value="${
+                  esc(
+                    fs.critical_stop_key ??
+                    '2'
+                  )
+                }">
+            </div>
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+              <label>
+                Fixation mm
+              </label>
+
+              <input
+                id="fs_fixation"
+                type="number"
+                step=".1"
+                value="${
+                  fs.fixation_mm ??
+                  3
+                }">
+            </div>
+
+
+            <div class="field">
+              <label>
+                Pair gap mm
+              </label>
+
+              <input
+                id="fs_gap"
+                type="number"
+                step=".1"
+                value="${
+                  fs.pair_gap_mm ??
+                  15
+                }">
+            </div>
+
+          </div>
+
+
+          <div class="inline">
+
+            <div class="field">
+              <label>
                 Small mm
               </label>
 
@@ -6074,6 +6179,30 @@
               );
 
 
+            const fs_set_order =
+              document.getElementById(
+                'fs_set_order'
+              );
+
+
+            const fs_stop_key =
+              document.getElementById(
+                'fs_stop_key'
+              );
+
+
+            const fs_fixation =
+              document.getElementById(
+                'fs_fixation'
+              );
+
+
+            const fs_gap =
+              document.getElementById(
+                'fs_gap'
+              );
+
+
             const fs_small =
               document.getElementById(
                 'fs_small'
@@ -6111,6 +6240,9 @@
                 +fs_stop.value,
 
               critical_stop_key:
+                fs_stop_key
+                  .value
+                  .trim() ||
                 '2',
 
               natural_asymmetry_threshold:
@@ -6128,6 +6260,16 @@
               break_ms:
                 +fs_break.value *
                 1000,
+
+              set_stimulus_order:
+                fs_set_order.value ||
+                'balanced_pseudorandom',
+
+              fixation_mm:
+                +fs_fixation.value,
+
+              pair_gap_mm:
+                +fs_gap.value,
 
               small_mm:
                 +fs_small.value,
@@ -6629,78 +6771,54 @@
 
           for (const b of blocks) {
             const bt =
-              ts.filter(
-                t =>
-                  t.block_name === b
-              );
-
-            const miss =
-              bt.filter(
-                t => t.missing
-              ).length;
-
-            r[`${b} N`] =
-              bt.length;
-
-            for (const k of keys) {
-              const n =
-                bt.filter(
+              ts
+                .filter(
                   t =>
-                    t.response_key === k
-                ).length;
+                    t.block_name === b
+                )
+                .sort(
+                  (a, b) =>
+                    Number(
+                      a.block_trial || 0
+                    ) -
+                    Number(
+                      b.block_trial || 0
+                    )
+                );
 
-              r[`${b} ${k}`] = n;
+            bt.forEach(
+              (t, i) => {
+                const n =
+                  i + 1;
 
-              r[`${b} ${k} %`] =
-                bt.length
-                  ? +(
-                      100 * n /
-                      bt.length
-                    ).toFixed(1)
-                  : 0;
-            }
+                r[
+                  `${b} Exposure ${n} — Stimulus`
+                ] =
+                  t.stimulus_name || '';
 
-            r[`${b} Sequence`] =
-              bt.map(
-                t =>
+                r[
+                  `${b} Exposure ${n} — Variant`
+                ] =
+                  t.metadata
+                    ?.set_side ||
+                  t.metadata
+                    ?.adaptive_set_variant ||
+                  '';
+
+                r[
+                  `${b} Exposure ${n} — Response`
+                ] =
                   t.response_key ||
-                  'MISSING'
-              ).join(',');
+                  'MISSING';
 
-            r[`${b} Missing`] =
-              miss;
-
-            r[`${b} Missing %`] =
-              bt.length
-                ? +(
-                    100 * miss /
-                    bt.length
-                  ).toFixed(1)
-                : 0;
-
-            r[
-              `${b} Extra keypresses`
-            ] =
-              bt.reduce(
-                (n, t) =>
-                  n +
-                  (
-                    t.metadata
-                      ?.extra_keypress_count ||
-                    t.metadata
-                      ?.extra_keypresses
-                      ?.length ||
-                    0
-                  ),
-                0
-              );
+                r[
+                  `${b} Exposure ${n} — RT ms`
+                ] =
+                  t.rt_ms ?? '';
+              }
+            );
           }
 
-
-          Object.assign(
-            r,
-            s.summary || {}
-          );
 
           return r;
         }
@@ -6803,6 +6921,18 @@
             Adaptive_Set_Variant:
               t.metadata
                 ?.adaptive_set_variant ?? '',
+
+            Set_Side:
+              t.metadata
+                ?.set_side || '',
+
+            Set_Stimulus_Order:
+              t.metadata
+                ?.set_stimulus_order || '',
+
+            Set_Variant_Index:
+              t.metadata
+                ?.set_variant_index ?? '',
 
             Metadata:
               JSON.stringify(
