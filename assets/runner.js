@@ -1938,6 +1938,80 @@
   }
 
 
+  function flashResponseButton(key) {
+    const targetKey = String(key);
+
+    const btn = [
+      ...document.querySelectorAll(
+        '.response-bar [data-k]'
+      )
+    ].find(
+      el =>
+        String(el.dataset.k) ===
+        targetKey
+    );
+
+    if (!btn) {
+      return;
+    }
+
+    if (btn._feedbackTimer) {
+      clearTimeout(
+        btn._feedbackTimer
+      );
+    }
+
+    if (!btn.dataset.feedbackOriginalStyle) {
+      btn.dataset.feedbackOriginalStyle =
+        btn.getAttribute('style') || '';
+    }
+
+    btn.style.backgroundColor =
+      '#2563eb';
+
+    btn.style.borderColor =
+      '#2563eb';
+
+    btn.style.color =
+      '#ffffff';
+
+    btn.style.transform =
+      'translateY(1px)';
+
+    btn._feedbackTimer =
+      setTimeout(
+        () => {
+          if (!btn.isConnected) {
+            return;
+          }
+
+          const original =
+            btn.dataset
+              .feedbackOriginalStyle || '';
+
+          if (original) {
+            btn.setAttribute(
+              'style',
+              original
+            );
+          }
+          else {
+            btn.removeAttribute(
+              'style'
+            );
+          }
+
+          delete btn.dataset
+            .feedbackOriginalStyle;
+
+          btn._feedbackTimer =
+            null;
+        },
+        180
+      );
+  }
+
+
   async function captureTrial(s) {
     globalTrial++;
 
@@ -2001,6 +2075,10 @@
       ) {
         return;
       }
+
+      flashResponseButton(
+        key
+      );
             const now =
         performance.now();
 
