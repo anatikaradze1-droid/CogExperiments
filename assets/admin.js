@@ -4426,6 +4426,271 @@
         e.type ===
         'fixedset_stage'
       ) {
+        const fs =
+          cfg.fixed_set || {};
+
+        let stageFields = '';
+
+        if (
+          e.stage ===
+          'practice'
+        ) {
+          stageFields = `
+            <div class="grid two">
+
+              <div class="field">
+                <label>
+                  Trials
+                </label>
+
+                <input
+                  data-fixed-stage-field="practice_trials"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="1"
+                  max="3"
+                  value="${
+                    fs.practice_trials ??
+                    3
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Stimulus
+                </label>
+
+                <input
+                  value="Equal circles"
+                  disabled>
+              </div>
+
+            </div>
+          `;
+        }
+
+        else if (
+          e.stage ===
+          'control'
+        ) {
+          stageFields = `
+            <div class="grid two">
+
+              <div class="field">
+                <label>
+                  Trials
+                </label>
+
+                <input
+                  data-fixed-stage-field="control_trials"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="1"
+                  value="${
+                    fs.control_trials ??
+                    15
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Equal circle size (mm)
+                </label>
+
+                <input
+                  data-fixed-stage-field="equal_mm"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  step=".1"
+                  value="${
+                    fs.equal_mm ??
+                    60
+                  }">
+              </div>
+
+            </div>
+          `;
+        }
+
+        else if (
+          e.stage ===
+          'set'
+        ) {
+          stageFields = `
+            <div class="grid two">
+
+              <div class="field">
+                <label>
+                  Trials
+                </label>
+
+                <input
+                  data-fixed-stage-field="set_trials"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="1"
+                  value="${
+                    fs.set_trials ??
+                    15
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Variation order
+                </label>
+
+                <select
+                  data-fixed-stage-field="set_stimulus_order">
+
+                  <option
+                    value="balanced_pseudorandom"
+                    ${
+                      (
+                        fs.set_stimulus_order ||
+                        'balanced_pseudorandom'
+                      ) ===
+                      'balanced_pseudorandom'
+                        ? 'selected'
+                        : ''
+                    }>
+                    Balanced pseudorandom
+                  </option>
+
+                  <option
+                    value="fixed_left"
+                    ${
+                      fs.set_stimulus_order ===
+                      'fixed_left'
+                        ? 'selected'
+                        : ''
+                    }>
+                    Fixed — large left
+                  </option>
+
+                  <option
+                    value="fixed_right"
+                    ${
+                      fs.set_stimulus_order ===
+                      'fixed_right'
+                        ? 'selected'
+                        : ''
+                    }>
+                    Fixed — large right
+                  </option>
+
+                </select>
+              </div>
+
+              <div class="field">
+                <label>
+                  Small circle (mm)
+                </label>
+
+                <input
+                  data-fixed-stage-field="small_mm"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  step=".1"
+                  value="${
+                    fs.small_mm ??
+                    40
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Large circle (mm)
+                </label>
+
+                <input
+                  data-fixed-stage-field="large_mm"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  step=".1"
+                  value="${
+                    fs.large_mm ??
+                    80
+                  }">
+              </div>
+
+            </div>
+          `;
+        }
+
+        else if (
+          e.stage ===
+          'critical'
+        ) {
+          stageFields = `
+            <div class="grid two">
+
+              <div class="field">
+                <label>
+                  Maximum trials
+                </label>
+
+                <input
+                  data-fixed-stage-field="critical_max_trials"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="1"
+                  max="40"
+                  value="${
+                    fs.critical_max_trials ??
+                    40
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Equal circle size (mm)
+                </label>
+
+                <input
+                  data-fixed-stage-field="equal_mm"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  step=".1"
+                  value="${
+                    fs.equal_mm ??
+                    60
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Stop after consecutive responses
+                </label>
+
+                <input
+                  data-fixed-stage-field="critical_stop_count"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="1"
+                  value="${
+                    fs.critical_stop_count ??
+                    10
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Stop response key
+                </label>
+
+                <input
+                  data-fixed-stage-field="critical_stop_key"
+                  value="${esc(
+                    fs.critical_stop_key ??
+                    '2'
+                  )}">
+              </div>
+
+            </div>
+          `;
+        }
+
         return `
           <section
             class="card element-card preset-element">
@@ -4446,6 +4711,78 @@
               Stage:
               ${esc(e.stage)}
             </p>
+
+            ${stageFields}
+
+            <div class="grid two">
+
+              <div class="field">
+                <label>
+                  Exposure (ms)
+                </label>
+
+                <input
+                  data-fixed-stage-field="exposure_ms"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="1"
+                  value="${
+                    fs.exposure_ms ??
+                    1000
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  ISI (ms)
+                </label>
+
+                <input
+                  data-fixed-stage-field="isi_ms"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="0"
+                  value="${
+                    fs.isi_ms ??
+                    1500
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Fixation size (mm)
+                </label>
+
+                <input
+                  data-fixed-stage-field="fixation_mm"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="0"
+                  step=".1"
+                  value="${
+                    fs.fixation_mm ??
+                    3
+                  }">
+              </div>
+
+              <div class="field">
+                <label>
+                  Pair gap (mm)
+                </label>
+
+                <input
+                  data-fixed-stage-field="pair_gap_mm"
+                  data-fixed-stage-type="number"
+                  type="number"
+                  min="0"
+                  step=".1"
+                  value="${
+                    fs.pair_gap_mm ??
+                    15
+                  }">
+              </div>
+
+            </div>
 
           </section>
         `;
@@ -5296,6 +5633,92 @@
               x.oninput =
                 () =>
                   updateEl(x);
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          '[data-fixed-stage-field]'
+        )
+        .forEach(
+          x => {
+            x.onchange =
+              x.oninput =
+                () => {
+                  const k =
+                    x.dataset
+                      .fixedStageField;
+
+                  const isNumber =
+                    x.dataset
+                      .fixedStageType ===
+                    'number';
+
+                  cfg.fixed_set =
+                    cfg.fixed_set || {};
+
+                  cfg.fixed_set[k] =
+                    isNumber
+                      ? +x.value
+                      : x.value;
+
+                  const topMap = {
+                    practice_trials:
+                      'fs_practice',
+                    control_trials:
+                      'fs_control',
+                    set_trials:
+                      'fs_set',
+                    critical_max_trials:
+                      'fs_critical',
+                    critical_stop_count:
+                      'fs_stop',
+                    critical_stop_key:
+                      'fs_stop_key',
+                    exposure_ms:
+                      'fs_exposure',
+                    isi_ms:
+                      'fs_isi',
+                    small_mm:
+                      'fs_small',
+                    equal_mm:
+                      'fs_equal',
+                    large_mm:
+                      'fs_large',
+                    fixation_mm:
+                      'fs_fixation',
+                    pair_gap_mm:
+                      'fs_gap',
+                    set_stimulus_order:
+                      'fs_set_order'
+                  };
+
+                  const top =
+                    document.getElementById(
+                      topMap[k]
+                    );
+
+                  if (top) {
+                    top.value =
+                      x.value;
+                  }
+
+                  document
+                    .querySelectorAll(
+                      `[data-fixed-stage-field="${k}"]`
+                    )
+                    .forEach(
+                      peer => {
+                        if (
+                          peer !== x
+                        ) {
+                          peer.value =
+                            x.value;
+                        }
+                      }
+                    );
+                };
           }
         );
 
