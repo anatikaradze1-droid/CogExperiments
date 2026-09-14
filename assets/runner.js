@@ -1702,36 +1702,27 @@
           class="stimulus-stage">
 
           <div
-            class="uploaded-pair"
+            class="circle-stim"
             style="
-              gap:${gap}px;
+              position:absolute;
+              top:50%;
+              right:calc(50% + ${gap + fix / 2}px);
+              width:${lmm * p}px;
+              height:${lmm * p}px;
+              transform:translateY(-50%);
             ">
+          </div>
 
-            <div
-              class="circle-stim"
-              style="
-                width:${lmm * p}px;
-                height:${lmm * p}px;
-              ">
-            </div>
-
-            <div
-              style="
-                width:${fix}px;
-                height:${fix}px;
-                visibility:hidden;
-                flex:none;
-              ">
-            </div>
-
-            <div
-              class="circle-stim"
-              style="
-                width:${rmm * p}px;
-                height:${rmm * p}px;
-              ">
-            </div>
-
+          <div
+            class="circle-stim"
+            style="
+              position:absolute;
+              top:50%;
+              left:calc(50% + ${gap + fix / 2}px);
+              width:${rmm * p}px;
+              height:${rmm * p}px;
+              transform:translateY(-50%);
+            ">
           </div>
 
         </div>
