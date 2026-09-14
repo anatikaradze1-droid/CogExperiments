@@ -6326,7 +6326,18 @@
 
 
     xlsx.onclick =
-      () =>
+      async () => {
+        if (!rex.value) {
+          return alert(
+            'ექსელის ექსპორტისთვის აირჩიეთ კონკრეტული ექსპერიმენტი.'
+          );
+        }
+
+        data =
+          await CogDB.results(
+            rex.value
+          );
+
         exportExcel(
           data,
           es.find(
@@ -6335,6 +6346,7 @@
               rex.value
           )
         );
+      };
 
 
     await refresh();
@@ -6345,45 +6357,107 @@
     data,
     exp
   ) {
-    if (
-      !window.XLSX
-    ) {
+    if (!window.XLSX) {
       return alert(
         'Excel unavailable'
       );
     }
 
+    if (!exp) {
+      return alert(
+        'ექსელის ექსპორტისთვის აირჩიეთ კონკრეტული ექსპერიმენტი.'
+      );
+    }
 
-    const by =
-      new Map();
 
+    const tbilisiParts = value => {
+      if (!value) {
+        return {
+          date: '',
+          time: ''
+        };
+      }
+
+      const d = new Date(value);
+
+      if (Number.isNaN(d.getTime())) {
+        return {
+          date: '',
+          time: ''
+        };
+      }
+
+      const parts =
+        new Intl.DateTimeFormat(
+          'en-GB',
+          {
+            timeZone:
+              'Asia/Tbilisi',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hourCycle: 'h23'
+          }
+        ).formatToParts(d);
+
+      const get = type =>
+        parts.find(
+          p => p.type === type
+        )?.value || '';
+
+      return {
+        date:
+          `${get('day')}/${get('month')}/${get('year')}`,
+        time:
+          `${get('hour')}:${get('minute')}:${get('second')}`
+      };
+    };
+
+
+    const answerValue = value => {
+      if (Array.isArray(value)) {
+        return value.join('; ');
+      }
+
+      if (
+        value &&
+        typeof value === 'object'
+      ) {
+        return JSON.stringify(value);
+      }
+
+      return value ?? '';
+    };
+
+
+    const by = new Map();
 
     data.trials.forEach(
       t => {
-        if (
-          !by.has(
-            t.session_id
-          )
-        ) {
-          by.set(
-            t.session_id,
-            []
-          );
+        if (!by.has(t.session_id)) {
+          by.set(t.session_id, []);
         }
 
-
-        by.get(
-          t.session_id
-        ).push(t);
+        by.get(t.session_id).push(t);
       }
     );
+
+
+    const sessionById =
+      new Map(
+        data.sessions.map(
+          s => [s.id, s]
+        )
+      );
 
 
     const blocks = [
       ...new Set(
         data.trials.map(
-          t =>
-            t.block_name
+          t => t.block_name
         )
       )
     ];
@@ -6391,35 +6465,83 @@
 
     const keys = [
       ...new Set([
-        ...(
-          exp?.config
-            ?.responses ||
-          []
-        ).map(
-          r => r.key
-        ),
-
+        ...(exp.config?.responses || [])
+          .map(r => r.key),
         ...data.trials
-          .map(
-            t =>
-              t.response_key
-          )
+          .map(t => t.response_key)
           .filter(Boolean)
       ])
     ];
+
+
+    const participantQuestions =
+      (
+        exp.config
+          ?.participant_info
+          ?.questions || []
+      ).filter(
+        q =>
+          String(q.label || '')
+            .trim()
+      );
 
 
     const ps =
       data.sessions.map(
         s => {
           const ts =
-            by.get(s.id) ||
-            [];
+            by.get(s.id) || [];
 
+          const started =
+            tbilisiParts(
+              s.created_at
+            );
+
+          const completed =
+            tbilisiParts(
+              s.completed_at
+            );
+
+          const participantSubmitted =
+            tbilisiParts(
+              s.participant_data
+                ?.submitted_at
+            );
 
           const r = {
+            Session_ID:
+              s.id,
+
             Participant:
               s.participant_code,
+
+            Experiment:
+              exp.name,
+
+            Experiment_Slug:
+              exp.slug,
+
+            Experiment_Version:
+              s.experiment_version ??
+              exp.version,
+
+            Date:
+              started.date,
+
+            Start_Time:
+              started.time,
+
+            Completion_Date:
+              completed.date,
+
+            Completion_Time:
+              completed.time,
+
+            Participant_Info_Submitted_Date:
+              participantSubmitted.date,
+
+            Participant_Info_Submitted_Time:
+              participantSubmitted.time,
 
             Completed:
               s.completed_at
@@ -6427,88 +6549,134 @@
                 : 'No',
 
             Validity:
-              s.validity_status ||
-              ''
+              s.validity_status || '',
+
+            Device_Type:
+              s.device_type || '',
+
+            Viewport_Width:
+              s.viewport_width ?? '',
+
+            Viewport_Height:
+              s.viewport_height ?? '',
+
+            User_Agent:
+              s.user_agent || ''
           };
 
 
-          for (
-            const b of blocks
-          ) {
+          const storedAnswers =
+            s.participant_data
+              ?.answers || {};
+
+
+          participantQuestions.forEach(
+            (q, i) => {
+              const stored =
+                storedAnswers[q.id];
+
+              const value =
+                stored &&
+                typeof stored ===
+                  'object' &&
+                Object.prototype
+                  .hasOwnProperty.call(
+                    stored,
+                    'answer'
+                  )
+                  ? stored.answer
+                  : stored;
+
+              r[
+                `Q${i + 1} — ${q.label}`
+              ] = answerValue(value);
+            }
+          );
+
+
+          Object.entries(
+            storedAnswers
+          ).forEach(
+            ([id, stored]) => {
+              if (
+                participantQuestions
+                  .some(q => q.id === id)
+              ) {
+                return;
+              }
+
+              const label =
+                stored?.label || id;
+
+              const value =
+                stored &&
+                typeof stored ===
+                  'object' &&
+                Object.prototype
+                  .hasOwnProperty.call(
+                    stored,
+                    'answer'
+                  )
+                  ? stored.answer
+                  : stored;
+
+              r[
+                `Participant — ${label}`
+              ] = answerValue(value);
+            }
+          );
+
+
+          for (const b of blocks) {
             const bt =
               ts.filter(
                 t =>
-                  t.block_name ===
-                  b
+                  t.block_name === b
               );
-
 
             const miss =
               bt.filter(
                 t => t.missing
               ).length;
 
-
             r[`${b} N`] =
               bt.length;
 
-
-            for (
-              const k of keys
-            ) {
+            for (const k of keys) {
               const n =
                 bt.filter(
                   t =>
-                    t.response_key ===
-                    k
+                    t.response_key === k
                 ).length;
 
+              r[`${b} ${k}`] = n;
 
-              r[
-                `${b} ${k}`
-              ] = n;
-
-
-              r[
-                `${b} ${k} %`
-              ] =
+              r[`${b} ${k} %`] =
                 bt.length
                   ? +(
-                      100 *
-                      n /
+                      100 * n /
                       bt.length
                     ).toFixed(1)
                   : 0;
             }
 
-
-            r[
-              `${b} Sequence`
-            ] =
+            r[`${b} Sequence`] =
               bt.map(
                 t =>
                   t.response_key ||
                   'MISSING'
               ).join(',');
 
-
-            r[
-              `${b} Missing`
-            ] =
+            r[`${b} Missing`] =
               miss;
 
-
-            r[
-              `${b} Missing %`
-            ] =
+            r[`${b} Missing %`] =
               bt.length
                 ? +(
-                    100 *
-                    miss /
+                    100 * miss /
                     bt.length
                   ).toFixed(1)
                 : 0;
-
 
             r[
               `${b} Extra keypresses`
@@ -6519,6 +6687,9 @@
                   (
                     t.metadata
                       ?.extra_keypress_count ||
+                    t.metadata
+                      ?.extra_keypresses
+                      ?.length ||
                     0
                   ),
                 0
@@ -6528,37 +6699,8 @@
 
           Object.assign(
             r,
-            s.summary ||
-            {}
+            s.summary || {}
           );
-
-
-          /*
-            Future participant responses will be
-            added here after the public
-            Participant Information page and
-            session storage are connected.
-          */
-
-          if (
-            s.participant_data &&
-            typeof s.participant_data ===
-              'object'
-          ) {
-            Object.entries(
-              s.participant_data
-            ).forEach(
-              ([key, value]) => {
-                r[
-                  `Participant_${key}`
-                ] =
-                  Array.isArray(value)
-                    ? value.join(', ')
-                    : value;
-              }
-            );
-          }
-
 
           return r;
         }
@@ -6567,386 +6709,308 @@
 
     const tr =
       data.trials.map(
-        t => ({
-          Participant:
-            t.participant_code,
+        t => {
+          const s =
+            sessionById.get(
+              t.session_id
+            );
 
-          Block:
-            t.block_name,
+          const started =
+            tbilisiParts(
+              s?.created_at
+            );
 
-          Global_Trial:
-            t.global_trial,
+          return {
+            Session_ID:
+              t.session_id,
 
-          Block_Trial:
-            t.block_trial,
+            Participant:
+              t.participant_code,
 
-          Stimulus:
-            t.stimulus_name,
+            Experiment:
+              exp.name,
 
-          Stimulus_Type:
-            t.stimulus_type,
+            Experiment_Version:
+              t.experiment_version ??
+              s?.experiment_version ??
+              exp.version,
 
-          Response_Key:
-            t.response_key ||
-            '',
+            Date:
+              started.date,
 
-          Response_Label:
-            t.response_label ||
-            '',
+            Start_Time:
+              started.time,
 
-          RT_ms:
-            t.rt_ms,
+            Block:
+              t.block_name,
 
-          Missing:
-            t.missing
-              ? 'TRUE'
-              : 'FALSE',
+            Global_Trial:
+              t.global_trial,
 
-          Response_During:
-            t.metadata
-              ?.response_during ||
-            '',
+            Block_Trial:
+              t.block_trial,
 
-          Extra_Keypress_Count:
-            t.metadata
-              ?.extra_keypress_count ||
-            0,
+            Stimulus:
+              t.stimulus_name,
 
-          Extra_Keypresses:
-            JSON.stringify(
+            Stimulus_Type:
+              t.stimulus_type,
+
+            Response_Key:
+              t.response_key || '',
+
+            Response_Label:
+              t.response_label || '',
+
+            RT_ms:
+              t.rt_ms,
+
+            Missing:
+              t.missing
+                ? 'TRUE'
+                : 'FALSE',
+
+            Response_During:
               t.metadata
-                ?.extra_keypresses ||
-              []
-            ),
+                ?.response_during || '',
 
-          Stimulus_Order:
-            t.metadata
-              ?.stimulus_order ||
-            '',
+            Extra_Keypress_Count:
+              t.metadata
+                ?.extra_keypress_count ||
+              t.metadata
+                ?.extra_keypresses
+                ?.length ||
+              0,
 
-          Adaptive_Role:
-            t.metadata
-              ?.adaptive_role ||
-            '',
+            Extra_Keypresses:
+              JSON.stringify(
+                t.metadata
+                  ?.extra_keypresses || []
+              ),
 
-          Adaptive_Asymmetry:
-            t.metadata
-              ?.adaptive_asymmetry ||
-            '',
+            Stimulus_Order:
+              t.metadata
+                ?.stimulus_order || '',
 
-          Adaptive_Set_Variant:
-            t.metadata
-              ?.adaptive_set_variant ??
-            '',
+            Adaptive_Role:
+              t.metadata
+                ?.adaptive_role || '',
 
-          Metadata:
-            JSON.stringify(
-              t.metadata ||
-              {}
-            )
-        })
+            Adaptive_Asymmetry:
+              t.metadata
+                ?.adaptive_asymmetry || '',
+
+            Adaptive_Set_Variant:
+              t.metadata
+                ?.adaptive_set_variant ?? '',
+
+            Metadata:
+              JSON.stringify(
+                t.metadata || {}
+              )
+          };
+        }
       );
 
 
     const settings = [];
 
+    settings.push(
+      {
+        Setting: 'Name',
+        Value: exp.name
+      },
+      {
+        Setting: 'Slug',
+        Value: exp.slug
+      },
+      {
+        Setting: 'Version',
+        Value: exp.version
+      },
+      {
+        Setting: 'Template',
+        Value: exp.config?.template
+      },
+      {
+        Setting:
+          'Calibration required',
+        Value:
+          exp.config
+            ?.calibration
+            ?.enabled
+              ? 'Yes'
+              : 'No'
+      }
+    );
 
-    if (exp) {
+
+    if (exp.config?.study_info) {
+      settings.push(
+        {
+          Setting: 'Study category',
+          Value:
+            exp.config.study_info
+              .category || ''
+        },
+        {
+          Setting:
+            'Study duration minutes',
+          Value:
+            exp.config.study_info
+              .duration_minutes ?? ''
+        },
+        {
+          Setting: 'Study task',
+          Value:
+            exp.config.study_info
+              .task || ''
+        },
+        {
+          Setting: 'Study device',
+          Value:
+            exp.config.study_info
+              .device || ''
+        },
+        {
+          Setting: 'Participation',
+          Value:
+            exp.config.study_info
+              .participation || ''
+        },
+        {
+          Setting: 'Consent version',
+          Value:
+            exp.config.study_info
+              .consent_version ?? 1
+        }
+      );
+    }
+
+
+    const pi =
+      exp.config
+        ?.participant_info;
+
+    if (pi) {
       settings.push(
         {
           Setting:
-            'Name',
+            'Participant information enabled',
           Value:
-            exp.name
+            pi.enabled
+              ? 'Yes'
+              : 'No'
         },
-
         {
           Setting:
-            'Version',
+            'Participant page title',
           Value:
-            exp.version
+            pi.title || ''
         },
-
         {
           Setting:
-            'Template',
+            'Participant page introduction',
           Value:
-            exp.config?.template
+            pi.introduction || ''
         },
-
         {
           Setting:
-            'Calibration required',
+            'Participant question count',
           Value:
-            exp.config
-              ?.calibration
-              ?.enabled
-                ? 'Yes'
-                : 'No'
+            (pi.questions || []).length
         }
       );
 
-
-      if (
-        exp.config?.study_info
-      ) {
-        settings.push(
-          {
-            Setting:
-              'Study category',
-            Value:
-              exp.config
-                .study_info
-                .category ||
-              ''
-          },
-
-          {
-            Setting:
-              'Study duration minutes',
-            Value:
-              exp.config
-                .study_info
-                .duration_minutes ??
-              ''
-          },
-
-          {
-            Setting:
-              'Study task',
-            Value:
-              exp.config
-                .study_info
-                .task ||
-              ''
-          },
-
-          {
-            Setting:
-              'Study device',
-            Value:
-              exp.config
-                .study_info
-                .device ||
-              ''
-          },
-
-          {
-            Setting:
-              'Participation',
-            Value:
-              exp.config
-                .study_info
-                .participation ||
-              ''
-          },
-
-          {
-            Setting:
-              'Consent version',
-            Value:
-              exp.config
-                .study_info
-                .consent_version ??
-              1
-          }
-        );
-      }
-
-
-      /*
-        =====================================================
-        PARTICIPANT INFORMATION SETTINGS
-        =====================================================
-      */
-
-
-      if (
-        exp.config
-          ?.participant_info
-      ) {
-        const pi =
-          exp.config
-            .participant_info;
-
-
-        settings.push(
-          {
-            Setting:
-              'Participant information enabled',
-            Value:
-              pi.enabled
-                ? 'Yes'
-                : 'No'
-          },
-
-          {
-            Setting:
-              'Participant page title',
-            Value:
-              pi.title ||
-              ''
-          },
-
-          {
-            Setting:
-              'Participant page introduction',
-            Value:
-              pi.introduction ||
-              ''
-          },
-
-          {
-            Setting:
-              'Participant question count',
-            Value:
-              (
-                pi.questions ||
-                []
-              ).length
-          }
-        );
-
-
-        (
-          pi.questions ||
-          []
-        ).forEach(
+      (pi.questions || [])
+        .forEach(
           (q, i) => {
             settings.push(
               {
                 Setting:
-                  `Participant question ${
-                    i + 1
-                  } ID`,
-                Value:
-                  q.id ||
-                  ''
+                  `Participant question ${i + 1} ID`,
+                Value: q.id || ''
               },
-
               {
                 Setting:
-                  `Participant question ${
-                    i + 1
-                  }`,
-                Value:
-                  q.label ||
-                  ''
+                  `Participant question ${i + 1}`,
+                Value: q.label || ''
               },
-
               {
                 Setting:
-                  `Participant question ${
-                    i + 1
-                  } type`,
-                Value:
-                  q.type ||
-                  ''
+                  `Participant question ${i + 1} type`,
+                Value: q.type || ''
               },
-
               {
                 Setting:
-                  `Participant question ${
-                    i + 1
-                  } required`,
+                  `Participant question ${i + 1} required`,
                 Value:
                   q.required
                     ? 'Yes'
                     : 'No'
               },
-
               {
                 Setting:
-                  `Participant question ${
-                    i + 1
-                  } options`,
+                  `Participant question ${i + 1} options`,
                 Value:
-                  (
-                    q.options ||
-                    []
-                  ).join(
-                    ' | '
-                  )
+                  (q.options || [])
+                    .join(' | ')
               }
             );
           }
         );
-      }
+    }
 
 
-      (
-        exp.config
-          ?.responses ||
-        []
-      ).forEach(
+    (exp.config?.responses || [])
+      .forEach(
         (r, i) =>
           settings.push({
             Setting:
-              `Response ${
-                i + 1
-              }`,
-
+              `Response ${i + 1}`,
             Value:
               `${r.key} = ${r.label}`
           })
       );
 
 
-      (
-        exp.config
-          ?.elements ||
-        []
-      ).forEach(
+    (exp.config?.elements || [])
+      .forEach(
         (e, i) => {
           settings.push({
             Setting:
-              `Timeline ${
-                i + 1
-              }`,
-
+              `Timeline ${i + 1}`,
             Value:
               `${e.type}: ${
                 e.title ||
                 e.name ||
-                e.stage ||
-                ''
+                e.stage || ''
               }`
           });
 
-
-          if (
-            e.type ===
-            'block'
-          ) {
+          if (e.type === 'block') {
             settings.push(
               {
                 Setting:
                   `${e.name} trials`,
-                Value:
-                  e.trials
+                Value: e.trials
               },
-
               {
                 Setting:
                   `${e.name} exposure ms`,
-                Value:
-                  e.exposure_ms
+                Value: e.exposure_ms
               },
-
               {
                 Setting:
                   `${e.name} ISI ms`,
-                Value:
-                  e.isi_ms
+                Value: e.isi_ms
               },
-
               {
                 Setting:
                   `${e.name} order`,
                 Value:
                   e.stimulus_order
               },
-
               {
                 Setting:
                   `${e.name} adaptive role`,
@@ -6954,7 +7018,6 @@
                   e.adaptive_role ||
                   'none'
               },
-
               {
                 Setting:
                   `${e.name} stop rule`,
@@ -6969,55 +7032,62 @@
           }
         }
       );
-    }
 
 
     const wb =
-      XLSX.utils
-        .book_new();
+      XLSX.utils.book_new();
 
+    const participantSheet =
+      XLSX.utils.json_to_sheet(ps);
 
-    XLSX.utils
-      .book_append_sheet(
-        wb,
+    const trialSheet =
+      XLSX.utils.json_to_sheet(tr);
 
-        XLSX.utils
-          .json_to_sheet(ps),
-
-        'Participants'
+    const settingsSheet =
+      XLSX.utils.json_to_sheet(
+        settings
       );
 
 
-    XLSX.utils
-      .book_append_sheet(
-        wb,
+    XLSX.utils.book_append_sheet(
+      wb,
+      participantSheet,
+      'Participants'
+    );
 
-        XLSX.utils
-          .json_to_sheet(tr),
+    XLSX.utils.book_append_sheet(
+      wb,
+      trialSheet,
+      'Trial_Data'
+    );
 
-        'Trial_Data'
-      );
+    XLSX.utils.book_append_sheet(
+      wb,
+      settingsSheet,
+      'Experiment_Settings'
+    );
 
 
-    XLSX.utils
-      .book_append_sheet(
-        wb,
+    const now = new Date();
 
-        XLSX.utils
-          .json_to_sheet(
-            settings
-          ),
-
-        'Experiment_Settings'
-      );
+    const exportDate =
+      new Intl.DateTimeFormat(
+        'en-CA',
+        {
+          timeZone:
+            'Asia/Tbilisi',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }
+      )
+        .format(now)
+        .replace(/\//g, '-');
 
 
     XLSX.writeFile(
       wb,
-      `${
-        exp?.slug ||
-        'cogexperiments'
-      }_results.xlsx`
+      `${exp.slug}_results_${exportDate}.xlsx`
     );
   }
 
